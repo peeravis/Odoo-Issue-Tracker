@@ -10,6 +10,7 @@ import { updateIssue, addComment, uploadAttachment, deleteAttachment, deleteComm
 import { canViewAllProjects } from "@/lib/utils";
 import { ArrowLeft, MessageSquare, Clock, Edit2, Check, Paperclip } from "lucide-react";
 import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
+import { StatusSolutionFields } from "@/components/issues/status-solution-fields";
 import { ToastHandler } from "@/components/ui/toast-handler";
 import { AttachmentList } from "@/components/issues/attachment-list";
 import { Markdown } from "@/components/ui/markdown";
@@ -192,14 +193,7 @@ export default async function IssueDetailPage({
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                  <select name="status" defaultValue={issue.status} className="input-base w-full">
-                    {["open", "in_progress", "resolved", "closed", "reopened"].map((s) => (
-                      <option key={s} value={s}>{s.replace("_", " ")}</option>
-                    ))}
-                  </select>
-                </div>
+                <StatusSolutionFields defaultStatus={issue.status} defaultSolution={issue.solution ?? ""} />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
@@ -242,10 +236,6 @@ export default async function IssueDetailPage({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solution</label>
-                <textarea name="solution" rows={5} defaultValue={issue.solution ?? ""} className="input-base w-full" />
-              </div>
 
               {/* Custom fields */}
               {issue.project.fieldDefs.map((field) => (

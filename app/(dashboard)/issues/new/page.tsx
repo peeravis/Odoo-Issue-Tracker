@@ -6,6 +6,7 @@ import { createIssue } from "@/app/actions/issues";
 import { ArrowLeft } from "lucide-react";
 import { ProjectSelector } from "@/components/issues/project-selector";
 import { canViewAllProjects } from "@/lib/utils";
+import { StatusSolutionFields } from "@/components/issues/status-solution-fields";
 
 export default async function NewIssuePage({
   searchParams,
@@ -147,14 +148,7 @@ export default async function NewIssuePage({
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-            <select name="status" defaultValue="open" className="input-base w-full">
-              {["open", "in_progress", "resolved", "closed", "reopened"].map((s) => (
-                <option key={s} value={s}>{s.replace("_", " ")}</option>
-              ))}
-            </select>
-          </div>
+          <StatusSolutionFields />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Logged By</label>
@@ -184,10 +178,6 @@ export default async function NewIssuePage({
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solution</label>
-          <textarea name="solution" rows={4} className="input-base w-full" placeholder="วิธีแก้ไข / รายละเอียด" />
-        </div>
 
         {/* Custom fields */}
         {projectData?.fieldDefs?.map((field) => (
