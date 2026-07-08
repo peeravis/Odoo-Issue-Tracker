@@ -14,6 +14,7 @@ import { StatusSolutionFields } from "@/components/issues/status-solution-fields
 import { ToastHandler } from "@/components/ui/toast-handler";
 import { AttachmentList } from "@/components/issues/attachment-list";
 import { Markdown } from "@/components/ui/markdown";
+import { DescriptionWithAttachments } from "@/components/issues/description-with-attachments";
 
 export default async function IssueDetailPage({
   params,
@@ -199,9 +200,10 @@ export default async function IssueDetailPage({
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
                   <select name="assigneeId" defaultValue={issue.assigneeId ?? ""} className="input-base w-full">
                     <option value="">-- Unassigned --</option>
-                    {allUsers.map((u) => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
-                    ))}
+                    {allUsers.map((u) => {
+                      const role = u.extraRoles.includes("aspd") ? "ASPD" : "Vendor";
+                      return <option key={u.id} value={u.id}>{u.name} ({role})</option>;
+                    })}
                   </select>
                 </div>
 
@@ -236,6 +238,8 @@ export default async function IssueDetailPage({
                 </div>
               </div>
 
+
+              <DescriptionWithAttachments defaultDescription={issue.description ?? ""} />
 
               {/* Custom fields */}
               {issue.project.fieldDefs.map((field) => (
@@ -293,11 +297,24 @@ export default async function IssueDetailPage({
           ) : (
             /* View Mode */
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
-              <h2 className="font-semibold text-gray-900 dark:text-white mb-2">Solution</h2>
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                {issue.solution
-                  ? <Markdown content={issue.solution} />
-                  : <span className="text-gray-400 italic">No solution provided</span>}
+              <div>
+                <h2 className="font-semibold text-gray-900 dark:text-white mb-2">Description</h2>
+                <div className="text-sm text-gray-700 dark:text-gray-300">
+                  {issue.description
+                    ? <Markdown content={issue.description} />
+                    : <span className="text-gray-400 italic">No description provided</span>}
+                </div>
+              </div>
+
+              <hr className="border-gray-100 dark:border-gray-700" />
+
+              <div>
+                <h2 className="font-semibold text-gray-900 dark:text-white mb-2">Solution</h2>
+                <div className="text-sm text-gray-700 dark:text-gray-300">
+                  {issue.solution
+                    ? <Markdown content={issue.solution} />
+                    : <span className="text-gray-400 italic">No solution provided</span>}
+                </div>
               </div>
 
               {/* Custom fields view */}

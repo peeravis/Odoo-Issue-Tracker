@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { ProjectSelector } from "@/components/issues/project-selector";
 import { canViewAllProjects } from "@/lib/utils";
 import { StatusSolutionFields } from "@/components/issues/status-solution-fields";
+import { DescriptionWithAttachments } from "@/components/issues/description-with-attachments";
 
 export default async function NewIssuePage({
   searchParams,
@@ -178,6 +179,8 @@ export default async function NewIssuePage({
           </div>
         </div>
 
+
+        <DescriptionWithAttachments />
 
         {/* Custom fields */}
         {projectData?.fieldDefs?.map((field) => (

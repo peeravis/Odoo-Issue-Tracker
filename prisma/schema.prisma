@@ -138,6 +138,7 @@ model Issue {
   module         String?
   priority       IssuePriority @default(medium)
   status         IssueStatus   @default(open)
+  description    String?
   solution       String?
   createdById    String
   loggedById     String?

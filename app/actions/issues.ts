@@ -30,11 +30,13 @@ export async function createIssue(formData: FormData) {
   const module = (formData.get("module") as string) || null;
   const priority = (formData.get("priority") as IssuePriority) || "medium";
   const status = (formData.get("status") as IssueStatus) || "open";
+  const description = (formData.get("description") as string) || null;
   const solution = (formData.get("solution") as string) || null;
   const loggedById = (formData.get("loggedById") as string) || null;
   const assigneeId = (formData.get("assigneeId") as string) || null;
   const dateReported = formData.get("dateReported") as string;
   const dueDate = formData.get("dueDate") as string;
+  const attachmentFiles = formData.getAll("attachments") as File[];
 
   // Get next issue number
   const lastIssue = await prisma.issue.findFirst({
@@ -62,6 +64,7 @@ export async function createIssue(formData: FormData) {
       module,
       priority,
       status,
+      description,
       solution,
       createdById: session.userId,
       loggedById: loggedById || undefined,
@@ -80,6 +83,21 @@ export async function createIssue(formData: FormData) {
       newValue: title,
     },
   });
+
+  // Save attachments from description form
+  const validFiles = attachmentFiles.filter((f) => f && f.size > 0 && f.size <= MAX_FILE_SIZE);
+  if (validFiles.length > 0) {
+    await mkdir(UPLOAD_DIR, { recursive: true });
+    for (const file of validFiles) {
+      const ext = path.extname(file.name);
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+      const filePath = path.join(UPLOAD_DIR, fileName);
+      await writeFile(filePath, Buffer.from(await file.arrayBuffer()));
+      await prisma.attachment.create({
+        data: { issueId: issue.id, fileName: file.name, fileUrl: `/api/uploads/${fileName}`, uploadedById: session.userId },
+      });
+    }
+  }
 
   // Send assignment email if assignee set
   if (assigneeId) {
@@ -115,6 +133,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
   const module = (formData.get("module") as string) || null;
   const priority = (formData.get("priority") as IssuePriority) || "medium";
   const status = (formData.get("status") as IssueStatus) || "open";
+  const description = (formData.get("description") as string) || null;
   const solution = (formData.get("solution") as string) || null;
   const loggedById = (formData.get("loggedById") as string) || null;
   const assigneeId = (formData.get("assigneeId") as string) || null;
@@ -153,6 +172,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
       module,
       priority,
       status,
+      description,
       solution,
       loggedById: loggedById || null,
       assigneeId: assigneeId || null,
