@@ -10,6 +10,7 @@ import {
   LogOut,
   Building2,
   Database,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/actions/auth";
@@ -108,6 +109,13 @@ export function Sidebar({ userRole, userName }: SidebarProps) {
             <p className="text-xs text-gray-500 capitalize mt-0.5">{userRole}</p>
           </div>
         </div>
+        <Link
+          href="/profile"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors duration-150"
+        >
+          <KeyRound className="h-4.5 w-4.5" />
+          เปลี่ยนรหัสผ่าน
+        </Link>
         <button
           onClick={handleLogout}
           disabled={pending}
