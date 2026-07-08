@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "extraRoles" TEXT[] NOT NULL DEFAULT '{}';

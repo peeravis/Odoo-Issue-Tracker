@@ -1,0 +1,529 @@
+import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { isMemberRole } from "@/lib/utils";
+import { PriorityBadge } from "@/components/issues/priority-badge";
+import { StatusBadge } from "@/components/issues/status-badge";
+import { formatDate, formatDateTime, generateIssueCode } from "@/lib/utils";
+import { updateIssue, addComment, uploadAttachment, deleteAttachment, deleteComment } from "@/app/actions/issues";
+import { canViewAllProjects } from "@/lib/utils";
+import { ArrowLeft, MessageSquare, Clock, Edit2, Check, Paperclip, Trash2 } from "lucide-react";
+import { ToastHandler } from "@/components/ui/toast-handler";
+import { AttachmentList } from "@/components/issues/attachment-list";
+import { Markdown } from "@/components/ui/markdown";
+
+export default async function IssueDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string; toast?: string }>;
+}) {
+  const { id } = await params;
+  const { edit, toast } = await searchParams;
+
+  const session = await getSession();
+  if (!session) return null;
+
+  const issue = await prisma.issue.findUnique({
+    where: { id },
+    include: {
+      project: {
+        include: {
+          fieldDefs: { orderBy: { sortOrder: "asc" } },
+        },
+      },
+      client: true,
+      createdBy: true,
+      loggedBy: true,
+      assignee: true,
+      modifiedBy: true,
+      comments: {
+        include: { user: true },
+        orderBy: { createdAt: "asc" },
+      },
+      attachments: { include: { uploadedBy: true }, orderBy: { createdAt: "desc" } },
+      activityLogs: {
+        include: { user: true },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      },
+    },
+  });
+
+  if (!issue) notFound();
+
+  // Member-level roles can only view issues from their assigned projects
+  if (isMemberRole(session.role)) {
+    const membership = await prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: issue.projectId, userId: session.userId } },
+    });
+    if (!membership) notFound();
+  }
+
+  const [allUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
+    prisma.user.findMany({
+      where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
+      select: { id: true, name: true, extraRoles: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.dropdownMaster.findMany({ where: { type: "issueType" }, orderBy: { sortOrder: "asc" } }),
+    prisma.dropdownMaster.findMany({ where: { type: "module" }, orderBy: { sortOrder: "asc" } }),
+    prisma.dropdownMaster.findMany({ where: { type: "department" }, orderBy: { sortOrder: "asc" } }),
+  ]);
+
+  const isEditing = edit === "1";
+  const issueCode = generateIssueCode(issue.project.code, issue.issueNumber);
+  const customFields = (issue.customFields as Record<string, unknown>) ?? {};
+
+  const updateAction = updateIssue.bind(null, id);
+  const commentAction = addComment.bind(null, id);
+  const uploadAction = uploadAttachment.bind(null, id);
+  const deleteAttachmentAction = deleteAttachment.bind(null, id);
+  const canManage = canViewAllProjects(session.role);
+
+  return (
+    <div className="max-w-5xl space-y-6">
+      <ToastHandler toast={toast} />
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <Link href="/issues" className="mt-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-mono text-gray-400">{issueCode}</span>
+              <PriorityBadge priority={issue.priority} />
+              <StatusBadge status={issue.status} />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{issue.title}</h1>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {issue.project.name} · Created by {issue.createdBy.name} on {formatDate(issue.createdAt)}
+            </p>
+          </div>
+        </div>
+        {!isEditing && (
+          <Link
+            href={`/issues/${id}?edit=1`}
+            className="inline-flex items-center gap-2 btn-secondary flex-shrink-0"
+          >
+            <Edit2 className="h-4 w-4" />
+            Edit
+          </Link>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="col-span-2 space-y-4">
+          {isEditing ? (
+            /* Edit Form */
+            <form action={updateAction} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+              <h2 className="font-semibold text-gray-900 dark:text-white">Edit Issue</h2>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title <span className="text-red-500">*</span></label>
+                <input name="title" defaultValue={issue.title} required className="input-base w-full" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client</label>
+                  <select name="clientId" defaultValue={issue.clientId ?? ""} className="input-base w-full">
+                    <option value="">-- None --</option>
+                    {allClients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หน่วยงาน</label>
+                  {masterDepartments.length > 0 ? (
+                    <select name="department" defaultValue={issue.department ?? ""} className="input-base w-full">
+                      <option value="">-- None --</option>
+                      {masterDepartments.map((o) => (
+                        <option key={o.id} value={o.label}>{o.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input name="department" defaultValue={issue.department ?? ""} placeholder="ระบุหน่วยงาน" className="input-base w-full" />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type</label>
+                  {masterIssueTypes.length > 0 ? (
+                    <select name="issueType" defaultValue={issue.issueType ?? ""} className="input-base w-full">
+                      <option value="">-- None --</option>
+                      {masterIssueTypes.map((o) => (
+                        <option key={o.id} value={o.label}>{o.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input name="issueType" defaultValue={issue.issueType ?? ""} placeholder="ระบุประเภท issue" className="input-base w-full" />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Module</label>
+                  {masterModules.length > 0 ? (
+                    <select name="module" defaultValue={issue.module ?? ""} className="input-base w-full">
+                      <option value="">-- None --</option>
+                      {masterModules.map((o) => (
+                        <option key={o.id} value={o.label}>{o.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input name="module" defaultValue={issue.module ?? ""} placeholder="ระบุ module" className="input-base w-full" />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                  <select name="priority" defaultValue={issue.priority} className="input-base w-full">
+                    {["high", "medium", "low"].map((p) => (
+                      <option key={p} value={p} className="capitalize">{p}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                  <select name="status" defaultValue={issue.status} className="input-base w-full">
+                    {["open", "in_progress", "resolved", "closed", "reopened"].map((s) => (
+                      <option key={s} value={s}>{s.replace("_", " ")}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
+                  <select name="assigneeId" defaultValue={issue.assigneeId ?? ""} className="input-base w-full">
+                    <option value="">-- Unassigned --</option>
+                    {allUsers.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Logged By</label>
+                  <select name="loggedById" defaultValue={issue.loggedById ?? ""} className="input-base w-full">
+                    <option value="">-- Select --</option>
+                    {allUsers.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date Reported</label>
+                  <input
+                    type="date"
+                    name="dateReported"
+                    defaultValue={issue.dateReported?.toISOString().split("T")[0]}
+                    className="input-base w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                  <input
+                    type="date"
+                    name="dueDate"
+                    defaultValue={issue.dueDate?.toISOString().split("T")[0]}
+                    className="input-base w-full"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solution</label>
+                <textarea name="solution" rows={5} defaultValue={issue.solution ?? ""} className="input-base w-full" />
+              </div>
+
+              {/* Custom fields */}
+              {issue.project.fieldDefs.map((field) => (
+                <div key={field.id}>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {field.label}
+                    {field.isRequired && <span className="text-red-500 ml-1">*</span>}
+                  </label>
+                  {field.fieldType === "textarea" ? (
+                    <textarea
+                      name={`custom_${field.fieldKey}`}
+                      defaultValue={String(customFields[field.fieldKey] ?? "")}
+                      required={field.isRequired}
+                      rows={3}
+                      className="input-base w-full"
+                    />
+                  ) : field.fieldType === "boolean" ? (
+                    <select name={`custom_${field.fieldKey}`} defaultValue={String(customFields[field.fieldKey] ?? "")} className="input-base w-full">
+                      <option value="">--</option>
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  ) : (field.fieldType === "select" || field.fieldType === "multiselect") ? (
+                    <select
+                      name={`custom_${field.fieldKey}`}
+                      defaultValue={String(customFields[field.fieldKey] ?? "")}
+                      multiple={field.fieldType === "multiselect"}
+                      className="input-base w-full"
+                    >
+                      <option value="">--</option>
+                      {((field.options as string[]) ?? []).map((o) => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={field.fieldType === "number" ? "number" : field.fieldType === "date" ? "date" : field.fieldType === "url" ? "url" : "text"}
+                      name={`custom_${field.fieldKey}`}
+                      defaultValue={String(customFields[field.fieldKey] ?? "")}
+                      required={field.isRequired}
+                      className="input-base w-full"
+                    />
+                  )}
+                </div>
+              ))}
+
+              <div className="flex gap-3 pt-2">
+                <Link href={`/issues/${id}`} className="btn-secondary flex-1 text-center py-2">Cancel</Link>
+                <button type="submit" className="btn-primary flex-1">
+                  <Check className="h-4 w-4" />
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* View Mode */
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+              <h2 className="font-semibold text-gray-900 dark:text-white mb-2">Solution</h2>
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                {issue.solution
+                  ? <Markdown content={issue.solution} />
+                  : <span className="text-gray-400 italic">No solution provided</span>}
+              </div>
+
+              {/* Custom fields view */}
+              {issue.project.fieldDefs.length > 0 && (
+                <>
+                  <hr className="border-gray-100 dark:border-gray-700" />
+                  <h3 className="font-medium text-gray-900 dark:text-white text-sm">Custom Fields</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {issue.project.fieldDefs.map((f) => (
+                      <div key={f.id}>
+                        <p className="text-xs text-gray-400">{f.label}</p>
+                        <p className="text-sm text-gray-800 dark:text-gray-200">
+                          {String(customFields[f.fieldKey] ?? "-")}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Comments */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-indigo-400" />
+              <h2 className="font-semibold text-gray-900 dark:text-white">
+                Comments
+              </h2>
+              {issue.comments.length > 0 && (
+                <span className="ml-auto text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold px-2 py-0.5 rounded-full">
+                  {issue.comments.length}
+                </span>
+              )}
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              {issue.comments.length === 0 && (
+                <p className="text-sm text-center text-gray-400 py-4 italic">ยังไม่มี comment</p>
+              )}
+              {issue.comments.map((c) => {
+                const isOwn = c.userId === session.userId;
+                return (
+                  <div key={c.id} className={`group flex gap-3 ${isOwn ? "flex-row-reverse" : ""}`}>
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm">
+                      {c.user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className={`flex-1 max-w-[85%] ${isOwn ? "items-end" : "items-start"} flex flex-col gap-1`}>
+                      <div className={`flex items-center gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{c.user.name}</span>
+                        <span className="text-xs text-gray-400">{formatDateTime(c.createdAt)}</span>
+                        {(isOwn || canManage) && (
+                          <form action={async () => { "use server"; await deleteComment(c.id, id); }}>
+                            <button type="submit" className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5 rounded transition-opacity" title="Delete comment">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                      <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
+                        isOwn
+                          ? "bg-indigo-600 text-white rounded-tr-sm"
+                          : "bg-gray-100 dark:bg-gray-700/60 text-gray-800 dark:text-gray-200 rounded-tl-sm"
+                      }`}>
+                        <Markdown content={c.content} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="px-6 pb-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+              <form action={commentAction} className="flex gap-3 items-end">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm">
+                  {session.name?.charAt(0).toUpperCase() ?? "U"}
+                </div>
+                <textarea
+                  name="content"
+                  placeholder="เพิ่ม comment..."
+                  rows={2}
+                  className="input-base flex-1 resize-none"
+                />
+                <button type="submit" className="btn-primary self-end flex-shrink-0">Send</button>
+              </form>
+            </div>
+          </div>
+
+          {/* Attachments */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+              <Paperclip className="h-4 w-4 text-gray-400" />
+              <h2 className="font-semibold text-gray-900 dark:text-white">
+                Attachments ({issue.attachments.length})
+              </h2>
+            </div>
+            <AttachmentList
+              attachments={issue.attachments}
+              sessionUserId={session.userId}
+              canManage={canManage}
+              deleteAction={deleteAttachmentAction}
+            />
+            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
+              <form action={uploadAction} className="flex items-center gap-3">
+                <input
+                  type="file"
+                  name="file"
+                  required
+                  className="flex-1 text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-900/30 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer"
+                />
+                <button type="submit" className="btn-primary flex-shrink-0">Upload</button>
+              </form>
+              <p className="text-xs text-gray-400 mt-1">สูงสุด 10 MB ต่อไฟล์</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar info */}
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Details</h3>
+
+            <DetailRow label="Project" value={issue.project.name} />
+            <DetailRow label="Client" value={issue.client?.name} />
+            <DetailRow label="หน่วยงาน" value={issue.department} />
+            <DetailRow label="Issue Type" value={issue.issueType} />
+            <DetailRow label="Module" value={issue.module} />
+            <DetailRow label="Assignee" value={issue.assignee?.name} />
+            <DetailRow label="Logged By" value={issue.loggedBy?.name} />
+            <DetailRow label="Created By" value={issue.createdBy.name} />
+            <DetailRow label="Modified By" value={issue.modifiedBy?.name} />
+            <DetailRow label="Date Reported" value={formatDate(issue.dateReported)} />
+            <DetailRow
+              label="Due Date"
+              value={formatDate(issue.dueDate)}
+              overdue={
+                !!issue.dueDate &&
+                new Date(issue.dueDate) < new Date() &&
+                issue.status !== "resolved" &&
+                issue.status !== "closed"
+              }
+            />
+            <DetailRow label="Created" value={formatDateTime(issue.createdAt)} />
+            <DetailRow label="Last Modified" value={formatDateTime(issue.lastModifiedAt)} />
+            {issue.resolvedAt && <DetailRow label="Resolved At" value={formatDateTime(issue.resolvedAt)} />}
+          </div>
+
+          {/* Activity Log */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="h-4 w-4 text-indigo-400" />
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Activity</h3>
+            </div>
+            <div className="relative">
+              {issue.activityLogs.length > 0 && (
+                <div className="absolute left-2.5 top-2 bottom-2 w-px bg-gray-100 dark:bg-gray-700/60" />
+              )}
+              <div className="space-y-3">
+                {issue.activityLogs.map((log) => {
+                  const isStatusChange = log.action === "status_changed";
+                  const isComment = log.action === "commented";
+                  const isCreated = log.action === "created";
+                  return (
+                    <div key={log.id} className="flex gap-3 items-start relative">
+                      <div className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 z-10 mt-0.5 ${
+                        isCreated
+                          ? "bg-green-100 dark:bg-green-900/30"
+                          : isStatusChange
+                          ? "bg-amber-100 dark:bg-amber-900/30"
+                          : isComment
+                          ? "bg-indigo-100 dark:bg-indigo-900/30"
+                          : "bg-gray-100 dark:bg-gray-700/50"
+                      }`}>
+                        <div className={`h-1.5 w-1.5 rounded-full ${
+                          isCreated ? "bg-green-500" : isStatusChange ? "bg-amber-500" : isComment ? "bg-indigo-500" : "bg-gray-400"
+                        }`} />
+                      </div>
+                      <div className="flex-1 min-w-0 pb-1">
+                        <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                          <span className="font-semibold text-gray-800 dark:text-gray-200">{log.user.name}</span>{" "}
+                          {isStatusChange
+                            ? <><span className="text-gray-500">changed status</span>{" "}
+                                <span className="line-through text-gray-400">{log.oldValue}</span>{" → "}
+                                <span className="font-medium text-indigo-600 dark:text-indigo-400">{log.newValue}</span></>
+                            : isComment
+                            ? <span className="text-gray-500">added a comment</span>
+                            : isCreated
+                            ? <span className="text-gray-500">created this issue</span>
+                            : <span className="text-gray-500">{log.action}</span>}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(log.createdAt)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {issue.activityLogs.length === 0 && (
+                  <p className="text-xs text-gray-400 pl-8">No activity yet</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value, overdue }: { label: string; value?: string | null; overdue?: boolean }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="text-xs text-gray-400 flex-shrink-0">{label}</span>
+      <span className={`text-xs text-right flex items-center gap-1.5 ${overdue ? "text-red-500 font-medium" : "text-gray-800 dark:text-gray-200"}`}>
+        {value ?? "-"}
+        {overdue && (
+          <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full font-semibold">
+            Overdue
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}

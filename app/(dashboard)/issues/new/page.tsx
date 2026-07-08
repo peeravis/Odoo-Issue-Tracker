@@ -1,0 +1,272 @@
+import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { createIssue } from "@/app/actions/issues";
+import { ArrowLeft } from "lucide-react";
+import { ProjectSelector } from "@/components/issues/project-selector";
+import { canViewAllProjects } from "@/lib/utils";
+
+export default async function NewIssuePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ projectId?: string }>;
+}) {
+  const sp = await searchParams;
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const canViewAll = canViewAllProjects(session.role);
+
+  const userProjects = canViewAll
+    ? await prisma.project.findMany({
+        where: { status: "active" },
+        select: { id: true, name: true, code: true },
+        orderBy: { name: "asc" },
+      })
+    : await prisma.projectMember
+        .findMany({
+          where: { userId: session.userId },
+          include: {
+            project: {
+              select: { id: true, name: true, code: true, status: true },
+            },
+          },
+        })
+        .then((m) => m.filter((x) => x.project.status === "active").map((x) => x.project));
+
+  const selectedProjectId = sp.projectId ?? userProjects[0]?.id ?? "";
+
+  const [projectData, allUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
+    selectedProjectId
+      ? prisma.project.findUnique({
+          where: { id: selectedProjectId },
+          include: { fieldDefs: { orderBy: { sortOrder: "asc" } } },
+        })
+      : Promise.resolve(null),
+    prisma.user.findMany({
+      where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
+      select: { id: true, name: true, extraRoles: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.dropdownMaster.findMany({ where: { type: "issueType" }, orderBy: { sortOrder: "asc" } }),
+    prisma.dropdownMaster.findMany({ where: { type: "module" }, orderBy: { sortOrder: "asc" } }),
+    prisma.dropdownMaster.findMany({ where: { type: "department" }, orderBy: { sortOrder: "asc" } }),
+  ]);
+
+  return (
+    <div className="max-w-3xl">
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/issues" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">New Issue</h1>
+      </div>
+
+      <form action={createIssue} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-5">
+
+        {/* Project selector — changing it reloads the page to show project-specific options */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Project <span className="text-red-500">*</span>
+          </label>
+          <ProjectSelector projects={userProjects} selectedProjectId={selectedProjectId} />
+          <p className="text-xs text-gray-400 mt-1">
+            เปลี่ยน Project เพื่อโหลด dropdown options ของ project นั้น
+          </p>
+        </div>
+
+        {/* Standard fields */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Issue Title <span className="text-red-500">*</span>
+          </label>
+          <input name="title" required className="input-base w-full" placeholder="ระบุปัญหา/หัวข้อ" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client</label>
+            <select name="clientId" className="input-base w-full">
+              <option value="">-- Select Client --</option>
+              {allClients.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หน่วยงาน</label>
+            {masterDepartments.length ? (
+              <select name="department" className="input-base w-full">
+                <option value="">-- Select --</option>
+                {masterDepartments.map((o) => (
+                  <option key={o.id} value={o.label}>{o.label}</option>
+                ))}
+              </select>
+            ) : (
+              <input name="department" placeholder="ระบุหน่วยงาน" className="input-base w-full" />
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type</label>
+            {masterIssueTypes.length ? (
+              <select name="issueType" className="input-base w-full">
+                <option value="">-- Select --</option>
+                {masterIssueTypes.map((o) => (
+                  <option key={o.id} value={o.label}>{o.label}</option>
+                ))}
+              </select>
+            ) : (
+              <input name="issueType" placeholder="ระบุประเภท issue" className="input-base w-full" />
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Module</label>
+            {masterModules.length ? (
+              <select name="module" className="input-base w-full">
+                <option value="">-- Select --</option>
+                {masterModules.map((o) => (
+                  <option key={o.id} value={o.label}>{o.label}</option>
+                ))}
+              </select>
+            ) : (
+              <input name="module" placeholder="ระบุ module" className="input-base w-full" />
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+            <select name="priority" defaultValue="medium" className="input-base w-full">
+              {["high", "medium", "low"].map((p) => (
+                <option key={p} value={p} className="capitalize">{p}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+            <select name="status" defaultValue="open" className="input-base w-full">
+              {["open", "in_progress", "resolved", "closed", "reopened"].map((s) => (
+                <option key={s} value={s}>{s.replace("_", " ")}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Logged By</label>
+            <select name="loggedById" className="input-base w-full">
+              <option value="">-- Select --</option>
+              {allUsers.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
+            <select name="assigneeId" className="input-base w-full">
+              <option value="">-- Unassigned --</option>
+              {allUsers.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date Reported</label>
+            <input type="date" name="dateReported" defaultValue={new Date().toISOString().split("T")[0]} className="input-base w-full" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+            <input type="date" name="dueDate" className="input-base w-full" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solution</label>
+          <textarea name="solution" rows={4} className="input-base w-full" placeholder="วิธีแก้ไข / รายละเอียด" />
+        </div>
+
+        {/* Custom fields */}
+        {projectData?.fieldDefs?.map((field) => (
+          <div key={field.id}>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {field.label}
+              {field.isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <CustomField field={field} />
+          </div>
+        ))}
+
+        <div className="flex gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <Link href="/issues" className="btn-secondary flex-1 text-center py-2">Cancel</Link>
+          <button type="submit" className="btn-primary flex-1">Create Issue</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function CustomField({
+  field,
+}: {
+  field: {
+    fieldKey: string;
+    fieldType: string;
+    options: unknown;
+    isRequired: boolean;
+  };
+}) {
+  const name = `custom_${field.fieldKey}`;
+  const required = field.isRequired;
+
+  if (field.fieldType === "textarea") {
+    return <textarea name={name} required={required} rows={3} className="input-base w-full" />;
+  }
+  if (field.fieldType === "boolean") {
+    return (
+      <select name={name} required={required} className="input-base w-full">
+        <option value="">-- Select --</option>
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </select>
+    );
+  }
+  if (field.fieldType === "select" || field.fieldType === "multiselect") {
+    const opts = (field.options as string[]) ?? [];
+    return (
+      <select
+        name={name}
+        required={required}
+        multiple={field.fieldType === "multiselect"}
+        className="input-base w-full"
+      >
+        <option value="">-- Select --</option>
+        {opts.map((o) => (
+          <option key={o} value={o}>{o}</option>
+        ))}
+      </select>
+    );
+  }
+
+  const typeMap: Record<string, string> = {
+    number: "number",
+    date: "date",
+    url: "url",
+    text: "text",
+  };
+
+  return (
+    <input
+      type={typeMap[field.fieldType] ?? "text"}
+      name={name}
+      required={required}
+      className="input-base w-full"
+    />
+  );
+}
