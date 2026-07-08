@@ -46,7 +46,7 @@ export default async function NewIssuePage({
       : Promise.resolve(null),
     prisma.user.findMany({
       where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
-      select: { id: true, name: true },
+      select: { id: true, name: true, extraRoles: true },
       orderBy: { name: "asc" },
     }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -166,9 +166,10 @@ export default async function NewIssuePage({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
             <select name="assigneeId" className="input-base w-full">
               <option value="">-- Unassigned --</option>
-              {assigneeUsers.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
+              {assigneeUsers.map((u) => {
+                const role = u.extraRoles.includes("aspd") ? "ASPD" : "Vendor";
+                return <option key={u.id} value={u.id}>{u.name} ({role})</option>;
+              })}
             </select>
           </div>
 
