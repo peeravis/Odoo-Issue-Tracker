@@ -162,7 +162,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
                   className="rounded border-gray-300 dark:border-gray-600"
                 />
               </th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-28 text-xs uppercase tracking-wide">ID</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 w-36 text-xs uppercase tracking-wide">ID</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">Issue</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell text-xs uppercase tracking-wide">Client</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell text-xs uppercase tracking-wide">Module</th>
@@ -226,7 +226,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
                                 className="rounded border-gray-300 dark:border-gray-600"
                               />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 whitespace-nowrap">
                               <span className="font-mono text-xs text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-1.5 py-0.5 rounded">
                                 {generateIssueCode(issue.project.code, issue.issueNumber)}
                               </span>
