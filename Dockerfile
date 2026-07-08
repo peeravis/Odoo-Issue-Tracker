@@ -3,7 +3,8 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm install --legacy-peer-deps --no-audit --no-fund
+RUN NODE_OPTIONS="--max-old-space-size=1024" npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline || \
+    NODE_OPTIONS="--max-old-space-size=512" npm install --legacy-peer-deps --no-audit --no-fund
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
