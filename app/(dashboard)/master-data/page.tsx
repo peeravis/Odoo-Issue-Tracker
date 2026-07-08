@@ -1,9 +1,10 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { Trash2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { FadeUp } from "@/components/ui/motion";
 import { addDropdownMaster, deleteDropdownMaster } from "@/app/actions/master";
+import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 
 const TYPES = [
   { key: "issueType", label: "Issue Type" },
@@ -45,11 +46,7 @@ export default async function MasterDataPage() {
                     return (
                       <div key={item.id} className="flex items-center justify-between group py-1 px-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/40">
                         <span className="text-sm text-gray-800 dark:text-gray-200">{item.label}</span>
-                        <form action={deleteAction}>
-                          <button type="submit" className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5 transition-opacity">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </form>
+                        <DeleteConfirmButton action={deleteAction} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5 transition-opacity" iconClassName="h-3.5 w-3.5" />
                       </div>
                     );
                   })}

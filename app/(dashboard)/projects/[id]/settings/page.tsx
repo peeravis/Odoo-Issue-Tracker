@@ -9,7 +9,8 @@ import {
   removeProjectMember,
   updateProject,
 } from "@/app/actions/projects";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 
 export default async function ProjectSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -91,11 +92,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{m.user.name}</p>
                 <p className="text-xs text-gray-400">{m.user.email} · {m.user.role}</p>
               </div>
-              <form action={async () => { "use server"; await removeMemberAction(m.userId); }}>
-                <button type="submit" className="text-red-500 hover:text-red-700 p-1">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </form>
+              <DeleteConfirmButton action={removeMemberAction.bind(null, m.userId)} className="text-red-500 hover:text-red-700 p-1" />
             </div>
           ))}
         </div>
@@ -141,11 +138,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
               <span className="text-xs text-gray-400 font-mono">{f.fieldKey}</span>
               <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{f.fieldType}</span>
               {f.isRequired && <span className="text-xs text-red-500">required</span>}
-              <form action={async () => { "use server"; await deleteFieldAction(f.id); }}>
-                <button type="submit" className="text-red-500 hover:text-red-700 p-1">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </form>
+              <DeleteConfirmButton action={deleteFieldAction.bind(null, f.id)} className="text-red-500 hover:text-red-700 p-1" />
             </div>
           ))}
         </div>

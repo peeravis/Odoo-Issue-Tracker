@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Paperclip, Download, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Paperclip, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 import { formatDate } from "@/lib/utils";
 
 const IMAGE_EXTS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"]);
@@ -77,15 +78,7 @@ export function AttachmentList({ attachments, sessionUserId, canManage, deleteAc
                   <Download className="h-4 w-4" />
                 </a>
                 {canDelete && (
-                  <form action={deleteAction.bind(null, a.id)}>
-                    <button
-                      type="submit"
-                      className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-1 rounded transition-opacity"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </form>
+                  <DeleteConfirmButton action={deleteAction.bind(null, a.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-1 rounded transition-opacity" iconClassName="h-3.5 w-3.5" />
                 )}
               </div>
             </div>

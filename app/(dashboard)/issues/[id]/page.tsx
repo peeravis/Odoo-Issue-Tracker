@@ -8,7 +8,8 @@ import { StatusBadge } from "@/components/issues/status-badge";
 import { formatDate, formatDateTime, generateIssueCode } from "@/lib/utils";
 import { updateIssue, addComment, uploadAttachment, deleteAttachment, deleteComment } from "@/app/actions/issues";
 import { canViewAllProjects } from "@/lib/utils";
-import { ArrowLeft, MessageSquare, Clock, Edit2, Check, Paperclip, Trash2 } from "lucide-react";
+import { ArrowLeft, MessageSquare, Clock, Edit2, Check, Paperclip } from "lucide-react";
+import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 import { ToastHandler } from "@/components/ui/toast-handler";
 import { AttachmentList } from "@/components/issues/attachment-list";
 import { Markdown } from "@/components/ui/markdown";
@@ -358,11 +359,7 @@ export default async function IssueDetailPage({
                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{c.user.name}</span>
                         <span className="text-xs text-gray-400">{formatDateTime(c.createdAt)}</span>
                         {(isOwn || canManage) && (
-                          <form action={async () => { "use server"; await deleteComment(c.id, id); }}>
-                            <button type="submit" className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5 rounded transition-opacity" title="Delete comment">
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </form>
+                          <DeleteConfirmButton action={deleteComment.bind(null, c.id, id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5 rounded transition-opacity" iconClassName="h-3 w-3" />
                         )}
                       </div>
                       <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm ${

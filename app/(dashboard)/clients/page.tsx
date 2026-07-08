@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { upsertClient, deleteClient } from "@/app/actions/clients";
 import { FadeUp } from "@/components/ui/motion";
+import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 import { Trash2, Plus, Download } from "lucide-react";
 import { ImportClientsButton } from "@/components/clients/import-clients-button";
 
@@ -106,11 +107,7 @@ function ClientRow({ client }: { client: { id: string; name: string; code: strin
       <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs">{client.contactInfo ?? "-"}</td>
       <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs">{client._count.issues} issues</td>
       <td className="px-5 py-3">
-        <form action={deleteAction}>
-          <button type="submit" className="text-red-400 hover:text-red-600 p-1">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </form>
+        <DeleteConfirmButton action={deleteAction} className="text-red-400 hover:text-red-600 p-1" />
       </td>
     </tr>
   );
