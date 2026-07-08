@@ -37,18 +37,13 @@ export default async function NewIssuePage({
 
   const selectedProjectId = sp.projectId ?? userProjects[0]?.id ?? "";
 
-  const [projectData, allUsers, assigneeUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
+  const [projectData, assigneeUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
     selectedProjectId
       ? prisma.project.findUnique({
           where: { id: selectedProjectId },
           include: { fieldDefs: { orderBy: { sortOrder: "asc" } } },
         })
       : Promise.resolve(null),
-    prisma.user.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
     prisma.user.findMany({
       where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
       select: { id: true, name: true },
@@ -163,12 +158,8 @@ export default async function NewIssuePage({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Logged By</label>
-            <select name="loggedById" defaultValue={session.userId} className="input-base w-full">
-              <option value="">-- Select --</option>
-              {allUsers.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
-            </select>
+            <input type="hidden" name="loggedById" value={session.userId} />
+            <input type="text" value={session.email} readOnly className="input-base w-full bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
           </div>
 
           <div>
