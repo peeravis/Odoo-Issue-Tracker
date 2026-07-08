@@ -158,7 +158,7 @@ export default async function NewIssuePage({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Logged By</label>
-            <select name="loggedById" className="input-base w-full">
+            <select name="loggedById" defaultValue={session.userId} className="input-base w-full">
               <option value="">-- Select --</option>
               {allUsers.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
