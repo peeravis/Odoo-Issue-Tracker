@@ -21,12 +21,18 @@ export async function POST(request: NextRequest) {
   const file = formData.get("file") as File | null;
   if (!file) return Response.json({ error: "No file" }, { status: 400 });
 
+  const sheetName = (formData.get("sheetName") as string | null)?.trim() ?? "";
+  const extraRole = (formData.get("extraRole") as string | null)?.trim() ?? "";
+  const extraRoles = extraRole === "aspd" || extraRole === "vendor" ? [extraRole] : [];
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const buffer = Buffer.from(await file.arrayBuffer()) as any;
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
 
-  const sheet = workbook.worksheets[0];
+  const sheet = sheetName
+    ? workbook.getWorksheet(sheetName) ?? workbook.worksheets[0]
+    : workbook.worksheets[0];
   if (!sheet) return Response.json({ error: "Empty workbook" }, { status: 400 });
 
   // Pre-load all projects by code for fast lookup
@@ -81,7 +87,7 @@ export async function POST(request: NextRequest) {
 
       if (existing) {
         // Update existing user
-        const data: Record<string, unknown> = { name: row.name, role, isActive };
+        const data: Record<string, unknown> = { name: row.name, role, isActive, extraRoles };
         if (row.password && row.password.length >= 6) {
           data.password = await bcrypt.hash(row.password, 12);
         }
@@ -115,6 +121,7 @@ export async function POST(request: NextRequest) {
             password: hashed,
             role: role as "admin" | "pm" | "member" | "rnao" | "co" | "gl",
             isActive,
+            extraRoles,
           },
         });
 
