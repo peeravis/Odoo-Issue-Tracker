@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { PriorityBadge } from "./priority-badge";
@@ -70,6 +71,7 @@ const rowVariants = {
 };
 
 export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps) {
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
@@ -95,6 +97,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
     startTransition(async () => {
       await bulkUpdateStatus(Array.from(selected), status);
       setSelected(new Set());
+      router.refresh();
     });
   };
 
