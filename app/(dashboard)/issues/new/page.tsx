@@ -37,7 +37,7 @@ export default async function NewIssuePage({
 
   const selectedProjectId = sp.projectId ?? userProjects[0]?.id ?? "";
 
-  const [projectData, allUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
+  const [projectData, allUsers, assigneeUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
     selectedProjectId
       ? prisma.project.findUnique({
           where: { id: selectedProjectId },
@@ -45,8 +45,13 @@ export default async function NewIssuePage({
         })
       : Promise.resolve(null),
     prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.user.findMany({
       where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
-      select: { id: true, name: true, extraRoles: true },
+      select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -170,7 +175,7 @@ export default async function NewIssuePage({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
             <select name="assigneeId" className="input-base w-full">
               <option value="">-- Unassigned --</option>
-              {allUsers.map((u) => (
+              {assigneeUsers.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
