@@ -66,6 +66,6 @@ export const STATUS_LABELS = {
   open: "Open",
   in_progress: "In Progress",
   resolved: "Resolved",
-  closed: "Closed",
+  closed: "Cancelled",
   reopened: "Reopened",
 } as const;

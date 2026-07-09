@@ -8,6 +8,7 @@ import { PriorityBadge } from "./priority-badge";
 import { StatusDropdown } from "./status-dropdown";
 import { formatDate, generateIssueCode } from "@/lib/utils";
 import { bulkUpdateStatus } from "@/app/actions/issues";
+import { STATUS_LABELS } from "@/lib/utils";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
 import { ChevronDown } from "lucide-react";
 
@@ -143,9 +144,9 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
                   key={s}
                   onClick={() => handleBulkStatus(s)}
                   disabled={pending}
-                  className="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-indigo-300 capitalize transition-colors font-medium"
+                  className="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-indigo-300 transition-colors font-medium"
                 >
-                  {s.replace("_", " ")}
+                  {STATUS_LABELS[s]}
                 </button>
               ))}
             </div>

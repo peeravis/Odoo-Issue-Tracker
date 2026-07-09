@@ -115,7 +115,7 @@ export default async function DashboardPage({
         <StatsCard label="Open" value={openCount} icon={<AlertCircle className="h-5 w-5 text-white" />} color="bg-blue-500" delay={0.05} />
         <StatsCard label="In Progress" value={inProgressCount} icon={<Clock className="h-5 w-5 text-white" />} color="bg-purple-500" delay={0.1} />
         <StatsCard label="Resolved" value={resolvedCount} icon={<CheckCircle className="h-5 w-5 text-white" />} color="bg-emerald-500" delay={0.15} />
-        <StatsCard label="Closed" value={closedCount} icon={<XCircle className="h-5 w-5 text-white" />} color="bg-slate-500" delay={0.2} />
+        <StatsCard label="Cancelled" value={closedCount} icon={<XCircle className="h-5 w-5 text-white" />} color="bg-slate-500" delay={0.2} />
         <StatsCard label="Reopened" value={reopenedCount} icon={<Bug className="h-5 w-5 text-white" />} color="bg-rose-500" delay={0.25} />
       </div>
 
@@ -135,7 +135,7 @@ export default async function DashboardPage({
                   {openCount > 0 && <div style={{ width: `${(openCount / totalIssues) * 100}%` }} className="bg-blue-500" title={`Open: ${openCount}`} />}
                   {inProgressCount > 0 && <div style={{ width: `${(inProgressCount / totalIssues) * 100}%` }} className="bg-purple-500" title={`In Progress: ${inProgressCount}`} />}
                   {resolvedCount > 0 && <div style={{ width: `${(resolvedCount / totalIssues) * 100}%` }} className="bg-emerald-500" title={`Resolved: ${resolvedCount}`} />}
-                  {closedCount > 0 && <div style={{ width: `${(closedCount / totalIssues) * 100}%` }} className="bg-slate-400" title={`Closed: ${closedCount}`} />}
+                  {closedCount > 0 && <div style={{ width: `${(closedCount / totalIssues) * 100}%` }} className="bg-slate-400" title={`Cancelled: ${closedCount}`} />}
                   {reopenedCount > 0 && <div style={{ width: `${(reopenedCount / totalIssues) * 100}%` }} className="bg-rose-500" title={`Reopened: ${reopenedCount}`} />}
                 </div>
                 <div className="space-y-2">
@@ -143,7 +143,7 @@ export default async function DashboardPage({
                     { label: "Open", count: openCount, color: "bg-blue-500" },
                     { label: "In Progress", count: inProgressCount, color: "bg-purple-500" },
                     { label: "Resolved", count: resolvedCount, color: "bg-emerald-500" },
-                    { label: "Closed", count: closedCount, color: "bg-slate-400" },
+                    { label: "Cancelled", count: closedCount, color: "bg-slate-400" },
                     { label: "Reopened", count: reopenedCount, color: "bg-rose-500" },
                   ].filter((s) => s.count > 0).map((s) => (
                     <div key={s.label} className="flex items-center gap-2 text-xs">
