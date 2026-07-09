@@ -436,7 +436,7 @@ export default async function IssueDetailPage({
             <DetailRow label="หน่วยงาน" value={issue.department} />
             <DetailRow label="Issue Type" value={issue.issueType} />
             <DetailRow label="Module" value={issue.module} />
-            <AssigneeRow name={issue.assignee?.name} />
+            <AssigneeRow name={issue.assignee?.name} extraRoles={issue.assignee?.extraRoles} />
             <DetailRow label="Logged By" value={issue.loggedBy?.name} />
             <DetailRow label="Created By" value={issue.createdBy.name} />
             <DetailRow label="Modified By" value={issue.modifiedBy?.name} />
@@ -516,7 +516,8 @@ export default async function IssueDetailPage({
   );
 }
 
-function AssigneeRow({ name }: { name?: string | null }) {
+function AssigneeRow({ name, extraRoles }: { name?: string | null; extraRoles?: string[] }) {
+  const role = extraRoles?.includes("aspd") ? "ASPD" : extraRoles?.includes("vendor") ? "Vendor" : null;
   return (
     <div className="flex justify-between items-center gap-2">
       <span className="text-xs text-gray-400 flex-shrink-0">Assignee</span>
@@ -525,7 +526,12 @@ function AssigneeRow({ name }: { name?: string | null }) {
           <div className="h-6 w-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
             {name.charAt(0).toUpperCase()}
           </div>
-          <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{name}</span>
+          <div className="flex flex-col items-end">
+            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{name}</span>
+            {role && (
+              <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{role}</span>
+            )}
+          </div>
         </div>
       ) : (
         <span className="text-xs text-gray-300 dark:text-gray-600">-</span>
