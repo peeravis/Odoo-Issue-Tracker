@@ -139,7 +139,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
               </span>
               <span className="text-indigo-200 dark:text-indigo-700">|</span>
               <span className="text-sm text-gray-600 dark:text-gray-300">Change status:</span>
-              {(["open", "in_progress", "resolved", "closed"] as IssueStatus[]).map((s) => (
+              {(["open", "in_progress", "wait_for_user_check", "resolved", "closed"] as IssueStatus[]).map((s) => (
                 <button
                   key={s}
                   onClick={() => handleBulkStatus(s)}

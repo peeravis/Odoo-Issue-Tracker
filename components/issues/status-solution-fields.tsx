@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { STATUS_LABELS } from "@/lib/utils";
 
-const STATUS_OPTIONS = ["open", "in_progress", "resolved", "closed", "reopened"];
+const STATUS_OPTIONS = ["open", "in_progress", "wait_for_user_check", "resolved", "closed", "reopened"];
 
 interface StatusSolutionFieldsProps {
   defaultStatus?: string;
@@ -23,7 +24,7 @@ export function StatusSolutionFields({ defaultStatus = "open", defaultSolution =
           className="input-base w-full"
         >
           {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s.replace("_", " ")}</option>
+            <option key={s} value={s}>{STATUS_LABELS[s as keyof typeof STATUS_LABELS] ?? s}</option>
           ))}
         </select>
       </div>

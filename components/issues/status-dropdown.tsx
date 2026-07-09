@@ -7,7 +7,7 @@ import { updateIssueStatus, resolveIssue } from "@/app/actions/issues";
 import { StatusBadge } from "./status-badge";
 import type { IssueStatus } from "@/lib/types";
 
-const STATUSES: IssueStatus[] = ["open", "in_progress", "resolved", "closed", "reopened"];
+const STATUSES: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "resolved", "closed", "reopened"];
 
 export function StatusDropdown({ issueId, status }: { issueId: string; status: IssueStatus }) {
   const [open, setOpen] = useState(false);

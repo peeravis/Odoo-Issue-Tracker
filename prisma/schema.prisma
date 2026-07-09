@@ -33,6 +33,7 @@ enum IssueStatus {
   resolved
   closed
   reopened
+  wait_for_user_check
 }
 
 enum FieldType {

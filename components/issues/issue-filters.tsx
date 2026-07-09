@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Filter, User, AlertTriangle, Clock, CalendarDays } from "lucide-react";
+import { STATUS_LABELS } from "@/lib/utils";
 
 interface Project { id: string; name: string }
 interface UserItem { id: string; name: string }
@@ -164,8 +165,8 @@ export function IssueFilters({ projects, users, clients, sessionUserId, defaults
               className="input-base w-full"
             >
               <option value="">All</option>
-              {["open", "in_progress", "resolved", "closed", "reopened"].map((s) => (
-                <option key={s} value={s}>{s.replace("_", " ")}</option>
+              {(["open", "in_progress", "wait_for_user_check", "resolved", "closed", "reopened"] as const).map((s) => (
+                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
               ))}
             </select>
           </div>
