@@ -5,6 +5,7 @@ import Link from "next/link";
 import { isMemberRole } from "@/lib/utils";
 import { PriorityBadge } from "@/components/issues/priority-badge";
 import { StatusBadge } from "@/components/issues/status-badge";
+import { StatusDropdown } from "@/components/issues/status-dropdown";
 import { formatDate, formatDateTime, generateIssueCode } from "@/lib/utils";
 import { updateIssue, addComment, uploadAttachment, deleteAttachment, deleteComment } from "@/app/actions/issues";
 import { canViewAllProjects } from "@/lib/utils";
@@ -100,7 +101,7 @@ export default async function IssueDetailPage({
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-mono text-gray-400">{issueCode}</span>
               <PriorityBadge priority={issue.priority} />
-              <StatusBadge status={issue.status} />
+              <StatusDropdown issueId={id} status={issue.status} />
             </div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">{issue.title}</h1>
             <p className="text-xs text-gray-400 mt-0.5">
