@@ -436,7 +436,7 @@ export default async function IssueDetailPage({
             <DetailRow label="หน่วยงาน" value={issue.department} />
             <DetailRow label="Issue Type" value={issue.issueType} />
             <DetailRow label="Module" value={issue.module} />
-            <DetailRow label="Assignee" value={issue.assignee?.name} />
+            <AssigneeRow name={issue.assignee?.name} />
             <DetailRow label="Logged By" value={issue.loggedBy?.name} />
             <DetailRow label="Created By" value={issue.createdBy.name} />
             <DetailRow label="Modified By" value={issue.modifiedBy?.name} />
@@ -512,6 +512,24 @@ export default async function IssueDetailPage({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AssigneeRow({ name }: { name?: string | null }) {
+  return (
+    <div className="flex justify-between items-center gap-2">
+      <span className="text-xs text-gray-400 flex-shrink-0">Assignee</span>
+      {name ? (
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+            {name.charAt(0).toUpperCase()}
+          </div>
+          <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{name}</span>
+        </div>
+      ) : (
+        <span className="text-xs text-gray-300 dark:text-gray-600">-</span>
+      )}
     </div>
   );
 }
