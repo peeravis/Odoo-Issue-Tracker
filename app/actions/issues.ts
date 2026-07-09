@@ -286,6 +286,40 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
   revalidatePath(`/issues/${issueId}`);
 }
 
+export async function resolveIssue(issueId: string, solution: string) {
+  const session = await requireSession();
+
+  if (isMemberRole(session.role)) {
+    const issue = await prisma.issue.findUnique({ where: { id: issueId }, select: { projectId: true, status: true } });
+    if (!issue) throw new Error("Not found");
+    const membership = await prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: issue.projectId, userId: session.userId } },
+    });
+    if (!membership) throw new Error("Unauthorized");
+  }
+
+  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { status: true, resolvedAt: true } });
+  if (!existing) throw new Error("Not found");
+
+  await prisma.issue.update({
+    where: { id: issueId },
+    data: {
+      status: "resolved",
+      solution,
+      modifiedById: session.userId,
+      lastModifiedAt: new Date(),
+      resolvedAt: existing.resolvedAt ?? new Date(),
+    },
+  });
+
+  await prisma.activityLog.create({
+    data: { issueId, userId: session.userId, action: "status_changed", oldValue: existing.status, newValue: "resolved" },
+  });
+
+  revalidatePath("/issues");
+  revalidatePath(`/issues/${issueId}`);
+}
+
 export async function bulkUpdateStatus(issueIds: string[], status: IssueStatus) {
   const session = await requireSession();
 
