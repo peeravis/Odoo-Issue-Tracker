@@ -209,12 +209,8 @@ export default async function IssueDetailPage({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Logged By</label>
-                  <select name="loggedById" defaultValue={issue.loggedById ?? ""} className="input-base w-full">
-                    <option value="">-- Select --</option>
-                    {allUsers.map((u) => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
-                    ))}
-                  </select>
+                  <input type="hidden" name="loggedById" value={issue.loggedById ?? ""} />
+                  <input type="text" value={issue.loggedBy?.email ?? issue.loggedBy?.name ?? "-"} readOnly className="input-base w-full bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
                 </div>
 
                 <div>
