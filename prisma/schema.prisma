@@ -68,15 +68,26 @@ model User {
   attachments    Attachment[]
 }
 
+model ProjectGroup {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  projects Project[]
+}
+
 model Project {
   id          String        @id @default(cuid())
   name        String
   code        String        @unique
   description String?
   status      ProjectStatus @default(active)
+  groupId     String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+  group         ProjectGroup?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
   members       ProjectMember[]
   issues        Issue[]
   fieldDefs     ProjectFieldDefinition[]

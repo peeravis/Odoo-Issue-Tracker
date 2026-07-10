@@ -170,3 +170,27 @@ export async function updateProjectMemberRole(projectId: string, userId: string,
   revalidatePath(`/projects/${projectId}/settings`);
 }
 
+
+export async function addProjectGroup(formData: FormData) {
+  await requireAdmin();
+  const name = (formData.get("name") as string).trim();
+  if (!name) return;
+  const count = await prisma.projectGroup.count();
+  await prisma.projectGroup.create({ data: { name, sortOrder: count } });
+  revalidatePath("/master-data");
+  revalidatePath("/projects");
+}
+
+export async function deleteProjectGroup(id: string) {
+  await requireAdmin();
+  await prisma.projectGroup.delete({ where: { id } });
+  revalidatePath("/master-data");
+  revalidatePath("/projects");
+}
+
+export async function updateProjectGroup(projectId: string, groupId: string | null) {
+  await requireAdmin();
+  await prisma.project.update({ where: { id: projectId }, data: { groupId } });
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${projectId}/settings`);
+}

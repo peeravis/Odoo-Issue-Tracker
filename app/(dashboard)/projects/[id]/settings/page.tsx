@@ -12,6 +12,7 @@ import {
   deleteProjectDropdown,
   upsertStatusConfig,
   updateProjectMemberRole,
+  updateProjectGroup,
 } from "@/app/actions/projects";
 import { ArrowLeft, Plus } from "lucide-react";
 import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
@@ -43,15 +44,19 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
   const session = await getSession();
   if (!session || (session.role !== "admin" && session.role !== "pm")) redirect("/projects");
 
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
-      fieldDefs: { orderBy: { sortOrder: "asc" } },
-      members: { include: { user: true }, orderBy: { createdAt: "asc" } },
-      dropdownItems: { orderBy: { sortOrder: "asc" } },
-      statusConfigs: { orderBy: { sortOrder: "asc" } },
-    },
-  });
+  const [project, allGroups] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id },
+      include: {
+        fieldDefs: { orderBy: { sortOrder: "asc" } },
+        members: { include: { user: true }, orderBy: { createdAt: "asc" } },
+        dropdownItems: { orderBy: { sortOrder: "asc" } },
+        statusConfigs: { orderBy: { sortOrder: "asc" } },
+        group: true,
+      },
+    }),
+    prisma.projectGroup.findMany({ orderBy: { sortOrder: "asc" } }),
+  ]);
 
   if (!project) notFound();
 
@@ -125,6 +130,22 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
           </div>
           <button type="submit" className="btn-primary">Save Changes</button>
         </form>
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project Group</label>
+          <form action={async (fd: FormData) => {
+            "use server";
+            const gId = fd.get("groupId") as string;
+            await updateProjectGroup(id, gId || null);
+          }} className="flex gap-2">
+            <select name="groupId" defaultValue={project.groupId ?? ""} className="input-base flex-1">
+              <option value="">— ไม่ระบุกลุ่ม —</option>
+              {allGroups.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+            <button type="submit" className="btn-secondary !px-3 text-sm">Save</button>
+          </form>
+        </div>
       </Section>
 
       {/* Members */}
