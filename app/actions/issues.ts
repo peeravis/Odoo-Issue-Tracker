@@ -185,15 +185,26 @@ export async function updateIssue(issueId: string, formData: FormData) {
     },
   });
 
-  if (existing.status !== status) {
-    await prisma.activityLog.create({
-      data: {
-        issueId,
-        userId: session.userId,
-        action: "status_changed",
-        oldValue: existing.status,
-        newValue: status,
-      },
+  const logs: { action: string; oldValue?: string | null; newValue?: string | null }[] = [];
+
+  if (existing.status !== status)
+    logs.push({ action: "status_changed", oldValue: existing.status, newValue: status });
+  if (existing.priority !== priority)
+    logs.push({ action: "priority_changed", oldValue: existing.priority, newValue: priority });
+  if ((existing.assigneeId ?? null) !== (assigneeId ?? null))
+    logs.push({ action: "assignee_changed", oldValue: existing.assigneeId, newValue: assigneeId });
+  if (existing.title !== title)
+    logs.push({ action: "title_changed", oldValue: existing.title, newValue: title });
+  if ((existing.dueDate?.toISOString().split("T")[0] ?? null) !== (dueDate || null))
+    logs.push({ action: "duedate_changed", oldValue: existing.dueDate ? existing.dueDate.toISOString().split("T")[0] : null, newValue: dueDate || null });
+  if ((existing.description ?? null) !== (description ?? null))
+    logs.push({ action: "description_updated" });
+  if ((existing.solution ?? null) !== (solution ?? null))
+    logs.push({ action: "solution_updated" });
+
+  if (logs.length > 0) {
+    await prisma.activityLog.createMany({
+      data: logs.map((l) => ({ issueId, userId: session.userId, ...l })),
     });
   }
 
@@ -352,9 +363,20 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
 
 export async function updateIssueDueDate(issueId: string, dueDate: string | null) {
   const session = await requireSession();
+  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { dueDate: true } });
+  if (!existing) throw new Error("Not found");
   await prisma.issue.update({
     where: { id: issueId },
     data: { dueDate: dueDate ? new Date(dueDate) : null, modifiedById: session.userId, lastModifiedAt: new Date() },
+  });
+  await prisma.activityLog.create({
+    data: {
+      issueId,
+      userId: session.userId,
+      action: "duedate_changed",
+      oldValue: existing.dueDate ? existing.dueDate.toISOString().split("T")[0] : null,
+      newValue: dueDate,
+    },
   });
   revalidatePath("/issues");
   revalidatePath(`/issues/${issueId}`);

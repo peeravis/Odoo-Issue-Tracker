@@ -477,36 +477,49 @@ export default async function IssueDetailPage({
               )}
               <div className="space-y-3">
                 {issue.activityLogs.map((log) => {
-                  const isStatusChange = log.action === "status_changed";
-                  const isComment = log.action === "commented";
-                  const isCreated = log.action === "created";
+                  const dotColor =
+                    log.action === "created" ? "bg-green-500" :
+                    log.action === "status_changed" ? "bg-amber-500" :
+                    log.action === "commented" ? "bg-indigo-500" :
+                    log.action === "priority_changed" ? "bg-orange-500" :
+                    log.action === "assignee_changed" ? "bg-purple-500" :
+                    log.action === "duedate_changed" ? "bg-blue-500" :
+                    log.action === "description_updated" || log.action === "solution_updated" ? "bg-teal-500" :
+                    "bg-gray-400";
+                  const ringColor = dotColor.replace("bg-", "bg-").replace("500", "100").replace("dark", "dark");
+
+                  const renderAction = () => {
+                    switch (log.action) {
+                      case "created": return <span className="text-gray-500">created this issue</span>;
+                      case "commented": return <span className="text-gray-500">added a comment</span>;
+                      case "description_updated": return <span className="text-gray-500">updated the description</span>;
+                      case "solution_updated": return <span className="text-gray-500">updated the solution</span>;
+                      case "status_changed": return <><span className="text-gray-500">changed status</span>{" "}
+                        <span className="line-through text-gray-400 text-xs">{log.oldValue}</span>{" → "}
+                        <span className="font-medium text-amber-600 dark:text-amber-400">{log.newValue}</span></>;
+                      case "priority_changed": return <><span className="text-gray-500">changed priority</span>{" "}
+                        <span className="line-through text-gray-400 text-xs">{log.oldValue}</span>{" → "}
+                        <span className="font-medium text-orange-600 dark:text-orange-400">{log.newValue}</span></>;
+                      case "assignee_changed": return <><span className="text-gray-500">reassigned to</span>{" "}
+                        <span className="font-medium text-purple-600 dark:text-purple-400">{log.newValue ?? "Unassigned"}</span></>;
+                      case "duedate_changed": return <><span className="text-gray-500">changed due date</span>{" "}
+                        {log.oldValue && <><span className="line-through text-gray-400 text-xs">{log.oldValue}</span>{" → "}</>}
+                        <span className="font-medium text-blue-600 dark:text-blue-400">{log.newValue ?? "removed"}</span></>;
+                      case "title_changed": return <><span className="text-gray-500">changed title to</span>{" "}
+                        <span className="font-medium text-gray-700 dark:text-gray-200">&ldquo;{log.newValue}&rdquo;</span></>;
+                      default: return <span className="text-gray-400 text-xs">{log.action.replace(/_/g, " ")}</span>;
+                    }
+                  };
+
                   return (
                     <div key={log.id} className="flex gap-3 items-start relative">
-                      <div className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 z-10 mt-0.5 ${
-                        isCreated
-                          ? "bg-green-100 dark:bg-green-900/30"
-                          : isStatusChange
-                          ? "bg-amber-100 dark:bg-amber-900/30"
-                          : isComment
-                          ? "bg-indigo-100 dark:bg-indigo-900/30"
-                          : "bg-gray-100 dark:bg-gray-700/50"
-                      }`}>
-                        <div className={`h-1.5 w-1.5 rounded-full ${
-                          isCreated ? "bg-green-500" : isStatusChange ? "bg-amber-500" : isComment ? "bg-indigo-500" : "bg-gray-400"
-                        }`} />
+                      <div className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 z-10 mt-0.5 bg-gray-100 dark:bg-gray-700/50`}>
+                        <div className={`h-1.5 w-1.5 rounded-full ${dotColor}`} />
                       </div>
                       <div className="flex-1 min-w-0 pb-1">
                         <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                           <span className="font-semibold text-gray-800 dark:text-gray-200">{log.user.name}</span>{" "}
-                          {isStatusChange
-                            ? <><span className="text-gray-500">changed status</span>{" "}
-                                <span className="line-through text-gray-400">{log.oldValue}</span>{" → "}
-                                <span className="font-medium text-indigo-600 dark:text-indigo-400">{log.newValue}</span></>
-                            : isComment
-                            ? <span className="text-gray-500">added a comment</span>
-                            : isCreated
-                            ? <span className="text-gray-500">created this issue</span>
-                            : <span className="text-gray-500">{log.action}</span>}
+                          {renderAction()}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(log.createdAt)}</p>
                       </div>
