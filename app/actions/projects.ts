@@ -45,6 +45,7 @@ export async function updateProject(projectId: string, formData: FormData) {
 
   revalidatePath(`/projects/${projectId}/settings`);
   revalidatePath("/projects");
+  redirect(`/projects/${projectId}/settings`);
 }
 
 export async function addProjectMember(projectId: string, formData: FormData) {
@@ -58,6 +59,7 @@ export async function addProjectMember(projectId: string, formData: FormData) {
   });
   revalidatePath(`/projects/${projectId}/settings`);
   revalidatePath("/users");
+  redirect(`/projects/${projectId}/settings`);
 }
 
 export async function removeProjectMember(projectId: string, userId: string) {
@@ -65,6 +67,7 @@ export async function removeProjectMember(projectId: string, userId: string) {
   await prisma.projectMember.deleteMany({ where: { projectId, userId } });
   revalidatePath(`/projects/${projectId}/settings`);
   revalidatePath("/users");
+  redirect(`/projects/${projectId}/settings`);
 }
 
 // Custom field definitions
@@ -91,12 +94,14 @@ export async function upsertFieldDefinition(projectId: string, formData: FormDat
   }
 
   revalidatePath(`/projects/${projectId}/settings`);
+  redirect(`/projects/${projectId}/settings`);
 }
 
 export async function deleteFieldDefinition(projectId: string, fieldId: string) {
   await requireAdmin();
   await prisma.projectFieldDefinition.delete({ where: { id: fieldId } });
   revalidatePath(`/projects/${projectId}/settings`);
+  redirect(`/projects/${projectId}/settings`);
 }
 
 // Per-project dropdown actions
@@ -114,6 +119,7 @@ export async function addProjectDropdown(projectId: string, formData: FormData) 
   revalidatePath(`/projects/${projectId}/settings`);
   revalidatePath(`/issues/new`);
   revalidatePath("/issues", "layout");
+  redirect(`/projects/${projectId}/settings`);
 }
 
 export async function deleteProjectDropdown(id: string, projectId: string) {
@@ -122,6 +128,7 @@ export async function deleteProjectDropdown(id: string, projectId: string) {
   revalidatePath(`/projects/${projectId}/settings`);
   revalidatePath(`/issues/new`);
   revalidatePath("/issues", "layout");
+  redirect(`/projects/${projectId}/settings`);
 }
 
 // Per-project status config
@@ -158,6 +165,7 @@ export async function upsertStatusConfig(projectId: string, formData: FormData) 
     });
   }
   revalidatePath(`/projects/${projectId}/settings`);
+  redirect(`/projects/${projectId}/settings`);
 }
 
 // Per-project member role
@@ -168,6 +176,7 @@ export async function updateProjectMemberRole(projectId: string, userId: string,
     data: { projectRole: role },
   });
   revalidatePath(`/projects/${projectId}/settings`);
+  redirect(`/projects/${projectId}/settings`);
 }
 
 
@@ -194,4 +203,5 @@ export async function updateProjectGroup(projectId: string, formData: FormData) 
   await prisma.project.update({ where: { id: projectId }, data: { groupId } });
   revalidatePath("/projects");
   revalidatePath(`/projects/${projectId}/settings`);
+  redirect(`/projects/${projectId}/settings`);
 }

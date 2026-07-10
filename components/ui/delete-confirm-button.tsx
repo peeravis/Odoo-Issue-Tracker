@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2, AlertTriangle } from "lucide-react";
 
 interface DeleteConfirmButtonProps {
@@ -12,11 +13,13 @@ interface DeleteConfirmButtonProps {
 export function DeleteConfirmButton({ action, className, iconClassName = "h-4 w-4" }: DeleteConfirmButtonProps) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   const handleConfirm = () => {
     startTransition(async () => {
       await action();
       setOpen(false);
+      router.refresh();
     });
   };
 
