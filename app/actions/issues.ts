@@ -335,6 +335,31 @@ export async function updateIssuePriority(issueId: string, priority: IssuePriori
   revalidatePath(`/issues/${issueId}`);
 }
 
+export async function updateIssueAssignee(issueId: string, assigneeId: string | null) {
+  const session = await requireSession();
+  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { assigneeId: true } });
+  if (!existing) throw new Error("Not found");
+  await prisma.issue.update({
+    where: { id: issueId },
+    data: { assigneeId, modifiedById: session.userId, lastModifiedAt: new Date() },
+  });
+  await prisma.activityLog.create({
+    data: { issueId, userId: session.userId, action: "assignee_changed", oldValue: existing.assigneeId, newValue: assigneeId },
+  });
+  revalidatePath("/issues");
+  revalidatePath(`/issues/${issueId}`);
+}
+
+export async function updateIssueDueDate(issueId: string, dueDate: string | null) {
+  const session = await requireSession();
+  await prisma.issue.update({
+    where: { id: issueId },
+    data: { dueDate: dueDate ? new Date(dueDate) : null, modifiedById: session.userId, lastModifiedAt: new Date() },
+  });
+  revalidatePath("/issues");
+  revalidatePath(`/issues/${issueId}`);
+}
+
 export async function bulkUpdateStatus(issueIds: string[], status: IssueStatus) {
   const session = await requireSession();
 

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { PriorityDropdown } from "./priority-dropdown";
 import { StatusDropdown } from "./status-dropdown";
+import { AssigneeDropdown } from "./assignee-dropdown";
+import { DueDatePicker } from "./due-date-picker";
 import { formatDate, generateIssueCode } from "@/lib/utils";
 import { bulkUpdateStatus } from "@/app/actions/issues";
 import { STATUS_LABELS } from "@/lib/utils";
@@ -26,14 +28,17 @@ type Issue = {
   createdAt: Date;
   project: { code: string; name: string };
   client: { name: string } | null;
-  assignee: { name: string } | null;
+  assignee: { id: string; name: string } | null;
   createdBy: { name: string };
 };
+
+type User = { id: string; name: string };
 
 interface IssueTableProps {
   issues: Issue[];
   groupBy: string;
   fieldDefs?: { fieldKey: string; label: string }[];
+  users?: User[];
 }
 
 const GROUP_FIELD_LABELS: Record<string, string> = {
@@ -71,7 +76,7 @@ const rowVariants = {
   }),
 };
 
-export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps) {
+export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: IssueTableProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -174,6 +179,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">Status</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell text-xs uppercase tracking-wide">Assignee</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell text-xs uppercase tracking-wide">Date</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell text-xs uppercase tracking-wide">Due Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40">
@@ -186,7 +192,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
                       className="bg-gray-50/80 dark:bg-gray-900/30 cursor-pointer hover:bg-gray-100/80 dark:hover:bg-gray-900/50 transition-colors"
                       onClick={() => toggleGroup(group)}
                     >
-                      <td colSpan={9} className="px-4 py-2.5">
+                      <td colSpan={10} className="px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <motion.div
                             animate={{ rotate: isCollapsed ? -90 : 0 }}
@@ -258,27 +264,19 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
                             <td className="px-4 py-3">
                               <StatusDropdown issueId={issue.id} status={issue.status} />
                             </td>
-                            <td className="px-4 py-3 hidden lg:table-cell text-gray-500 dark:text-gray-400 text-xs">
-                              {issue.assignee?.name ?? <span className="text-gray-300 dark:text-gray-600">—</span>}
+                            <td className="px-4 py-3 hidden lg:table-cell text-xs">
+                              <AssigneeDropdown
+                                issueId={issue.id}
+                                assigneeId={issue.assignee?.id ?? null}
+                                assigneeName={issue.assignee?.name ?? null}
+                                users={users}
+                              />
                             </td>
-                            <td className="px-4 py-3 hidden xl:table-cell text-xs tabular-nums">
-                              {(() => {
-                                const isOverdue =
-                                  issue.dueDate &&
-                                  new Date(issue.dueDate) < new Date() &&
-                                  issue.status !== "resolved" &&
-                                  issue.status !== "closed";
-                                return (
-                                  <span className={isOverdue ? "text-red-500 font-medium" : "text-gray-400"}>
-                                    {formatDate(issue.dateReported ?? issue.createdAt)}
-                                    {isOverdue && (
-                                      <span className="ml-1.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full font-semibold">
-                                        Overdue
-                                      </span>
-                                    )}
-                                  </span>
-                                );
-                              })()}
+                            <td className="px-4 py-3 hidden xl:table-cell text-xs tabular-nums text-gray-400">
+                              {formatDate(issue.dateReported ?? issue.createdAt)}
+                            </td>
+                            <td className="px-4 py-3 hidden xl:table-cell text-xs">
+                              <DueDatePicker issueId={issue.id} dueDate={issue.dueDate} />
                             </td>
                           </motion.tr>
                         );
@@ -289,7 +287,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
             })}
             {issues.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-6 py-16 text-center">
+                <td colSpan={10} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center mb-1">
                       <svg className="h-6 w-6 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

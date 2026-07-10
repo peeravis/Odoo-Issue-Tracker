@@ -101,7 +101,7 @@ export default async function IssuesPage({
         dueDate: true, createdAt: true,
         project: { select: { code: true, name: true } },
         client: { select: { name: true } },
-        assignee: { select: { name: true } },
+        assignee: { select: { id: true, name: true } },
         createdBy: { select: { name: true } },
       },
     }),
@@ -172,7 +172,7 @@ export default async function IssuesPage({
       </FadeUp>
 
       <FadeUp delay={0.1}>
-        <IssueTable issues={issues} groupBy={groupBy} />
+        <IssueTable issues={issues} groupBy={groupBy} users={allUsers} />
       </FadeUp>
 
       {totalPages > 1 && (
