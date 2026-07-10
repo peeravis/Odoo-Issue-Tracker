@@ -35,7 +35,7 @@ export default async function DashboardPage({
     ? { projectId: selectedProject.id }
     : { projectId: { in: allProjects.map((p) => p.id) } };
 
-  const [openCount, inProgressCount, resolvedCount, closedCount, reopenedCount, recentIssues, priorityStats, monthlyStats, overdueIssues] =
+  const [openCount, inProgressCount, resolvedCount, closedCount, reopenedCount, recentIssues, priorityStats, monthlyStats, overdueIssues, projectStats, assigneeStats] =
     await Promise.all([
       prisma.issue.count({ where: { ...projectFilter, status: "open" } }),
       prisma.issue.count({ where: { ...projectFilter, status: "in_progress" } }),
@@ -75,6 +75,20 @@ export default async function DashboardPage({
           assignee: { select: { name: true } },
         },
       }),
+      prisma.issue.groupBy({
+        by: ["projectId"],
+        where: { ...projectFilter, status: { notIn: ["resolved", "closed"] } },
+        _count: true,
+        orderBy: { _count: { projectId: "desc" } },
+        take: 8,
+      }),
+      prisma.issue.groupBy({
+        by: ["assigneeId"],
+        where: { ...projectFilter, status: { notIn: ["resolved", "closed"] }, assigneeId: { not: null } },
+        _count: true,
+        orderBy: { _count: { assigneeId: "desc" } },
+        take: 8,
+      }),
     ]);
 
   const totalIssues = openCount + inProgressCount + resolvedCount + closedCount + reopenedCount;
@@ -92,6 +106,30 @@ export default async function DashboardPage({
     months.push({ label, count });
   }
   const maxMonthly = Math.max(...months.map((m) => m.count), 1);
+
+  // Resolve project names for chart
+  const projectStatIds = projectStats.map((s) => s.projectId);
+  const projectNames = await prisma.project.findMany({
+    where: { id: { in: projectStatIds } },
+    select: { id: true, name: true },
+  });
+  const projectNameMap = new Map(projectNames.map((p) => [p.id, p.name]));
+  const projectChartData = projectStats
+    .map((s) => ({ name: projectNameMap.get(s.projectId) ?? s.projectId, count: s._count, id: s.projectId }))
+    .sort((a, b) => b.count - a.count);
+  const maxProjectCount = Math.max(...projectChartData.map((p) => p.count), 1);
+
+  // Resolve assignee names for chart
+  const assigneeStatIds = assigneeStats.map((s) => s.assigneeId!).filter(Boolean);
+  const assigneeNames = await prisma.user.findMany({
+    where: { id: { in: assigneeStatIds } },
+    select: { id: true, name: true },
+  });
+  const assigneeNameMap = new Map(assigneeNames.map((u) => [u.id, u.name]));
+  const assigneeChartData = assigneeStats
+    .map((s) => ({ name: assigneeNameMap.get(s.assigneeId!) ?? "Unknown", count: s._count, id: s.assigneeId! }))
+    .sort((a, b) => b.count - a.count);
+  const maxAssigneeCount = Math.max(...assigneeChartData.map((a) => a.count), 1);
 
   const issuesHref = selectedProject ? `/issues?projectId=${selectedProject.id}` : "/issues";
 
@@ -222,6 +260,69 @@ export default async function DashboardPage({
           </div>
         </div>
       </FadeUp>
+
+      {/* Issues by Project & by Assignee */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* By Project */}
+        <FadeUp delay={0.15}>
+          <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 p-6 shadow-sm h-full">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="h-4 w-4 text-gray-400" />
+              <h2 className="font-semibold text-gray-900 dark:text-white text-sm">Open Issues by Project</h2>
+            </div>
+            {projectChartData.length > 0 ? (
+              <div className="space-y-2.5">
+                {projectChartData.map((p) => (
+                  <Link key={p.id} href={`/issues?projectId=${p.id}`} className="block group">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate max-w-[200px]">{p.name}</span>
+                      <span className="text-xs font-semibold tabular-nums text-gray-900 dark:text-white ml-2 flex-shrink-0">{p.count}</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-indigo-500 group-hover:bg-indigo-600 transition-all duration-300"
+                        style={{ width: `${(p.count / maxProjectCount) * 100}%` }}
+                      />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 py-4">ไม่มี open issues</p>
+            )}
+          </div>
+        </FadeUp>
+
+        {/* By Assignee */}
+        <FadeUp delay={0.17}>
+          <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 p-6 shadow-sm h-full">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="h-4 w-4 text-gray-400" />
+              <h2 className="font-semibold text-gray-900 dark:text-white text-sm">Open Issues by Assignee</h2>
+            </div>
+            {assigneeChartData.length > 0 ? (
+              <div className="space-y-2.5">
+                {assigneeChartData.map((a) => (
+                  <Link key={a.id} href={`/issues?assigneeId=${a.id}`} className="block group">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate max-w-[200px]">{a.name}</span>
+                      <span className="text-xs font-semibold tabular-nums text-gray-900 dark:text-white ml-2 flex-shrink-0">{a.count}</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-violet-500 group-hover:bg-violet-600 transition-all duration-300"
+                        style={{ width: `${(a.count / maxAssigneeCount) * 100}%` }}
+                      />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 py-4">ไม่มี open issues ที่ assign</p>
+            )}
+          </div>
+        </FadeUp>
+      </div>
 
       {/* Overdue Widget */}
       {overdueIssues.length > 0 && (

@@ -191,8 +191,13 @@ export async function updateIssue(issueId: string, formData: FormData) {
     logs.push({ action: "status_changed", oldValue: existing.status, newValue: status });
   if (existing.priority !== priority)
     logs.push({ action: "priority_changed", oldValue: existing.priority, newValue: priority });
-  if ((existing.assigneeId ?? null) !== (assigneeId ?? null))
-    logs.push({ action: "assignee_changed", oldValue: existing.assigneeId, newValue: assigneeId });
+  if ((existing.assigneeId ?? null) !== (assigneeId ?? null)) {
+    const [oldAssignee, newAssignee] = await Promise.all([
+      existing.assigneeId ? prisma.user.findUnique({ where: { id: existing.assigneeId }, select: { name: true } }) : null,
+      assigneeId ? prisma.user.findUnique({ where: { id: assigneeId }, select: { name: true } }) : null,
+    ]);
+    logs.push({ action: "assignee_changed", oldValue: oldAssignee?.name ?? null, newValue: newAssignee?.name ?? null });
+  }
   if (existing.title !== title)
     logs.push({ action: "title_changed", oldValue: existing.title, newValue: title });
   if ((existing.dueDate?.toISOString().split("T")[0] ?? null) !== (dueDate || null))
@@ -350,12 +355,18 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
   const session = await requireSession();
   const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { assigneeId: true } });
   if (!existing) throw new Error("Not found");
+
+  const [oldAssignee, newAssignee] = await Promise.all([
+    existing.assigneeId ? prisma.user.findUnique({ where: { id: existing.assigneeId }, select: { name: true } }) : null,
+    assigneeId ? prisma.user.findUnique({ where: { id: assigneeId }, select: { name: true } }) : null,
+  ]);
+
   await prisma.issue.update({
     where: { id: issueId },
     data: { assigneeId, modifiedById: session.userId, lastModifiedAt: new Date() },
   });
   await prisma.activityLog.create({
-    data: { issueId, userId: session.userId, action: "assignee_changed", oldValue: existing.assigneeId, newValue: assigneeId },
+    data: { issueId, userId: session.userId, action: "assignee_changed", oldValue: oldAssignee?.name ?? null, newValue: newAssignee?.name ?? null },
   });
   revalidatePath("/issues");
   revalidatePath(`/issues/${issueId}`);
