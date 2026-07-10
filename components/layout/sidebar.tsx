@@ -46,7 +46,7 @@ export function Sidebar({ userRole, userName }: SidebarProps) {
   const isAdmin = userRole === "admin";
 
   const allItems = isAdmin
-    ? [adminOnlyItems[0], ...memberItems, adminOnlyItems[1], adminOnlyItems[2], adminOnlyItems[3]]
+    ? [adminOnlyItems[0], ...memberItems, adminOnlyItems[1], adminOnlyItems[2]]
     : memberItems;
 
   return (
