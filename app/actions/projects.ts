@@ -188,8 +188,9 @@ export async function deleteProjectGroup(id: string) {
   revalidatePath("/projects");
 }
 
-export async function updateProjectGroup(projectId: string, groupId: string | null) {
+export async function updateProjectGroup(projectId: string, formData: FormData) {
   await requireAdmin();
+  const groupId = (formData.get("groupId") as string) || null;
   await prisma.project.update({ where: { id: projectId }, data: { groupId } });
   revalidatePath("/projects");
   revalidatePath(`/projects/${projectId}/settings`);

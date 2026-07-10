@@ -80,6 +80,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
   const deleteFieldAction = deleteFieldDefinition.bind(null, id);
   const addDropdownAction = addProjectDropdown.bind(null, id);
   const upsertStatusAction = upsertStatusConfig.bind(null, id);
+  const updateGroupAction = updateProjectGroup.bind(null, id);
 
   const projectDropdownsByType = (type: string) =>
     project.dropdownItems.filter((i) => i.type === type);
@@ -132,11 +133,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
         </form>
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project Group</label>
-          <form action={async (fd: FormData) => {
-            "use server";
-            const gId = fd.get("groupId") as string;
-            await updateProjectGroup(id, gId || null);
-          }} className="flex gap-2">
+          <form action={updateGroupAction} className="flex gap-2">
             <select name="groupId" defaultValue={project.groupId ?? ""} className="input-base flex-1">
               <option value="">— ไม่ระบุกลุ่ม —</option>
               {allGroups.map((g) => (
