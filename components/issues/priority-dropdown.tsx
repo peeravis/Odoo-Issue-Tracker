@@ -7,7 +7,7 @@ import { updateIssuePriority } from "@/app/actions/issues";
 import { PriorityBadge } from "./priority-badge";
 import type { IssuePriority } from "@/lib/types";
 
-const PRIORITIES: IssuePriority[] = ["critical", "high", "medium", "low"];
+const PRIORITIES: IssuePriority[] = ["high", "medium", "low"];
 
 export function PriorityDropdown({ issueId, priority }: { issueId: string; priority: IssuePriority }) {
   const [open, setOpen] = useState(false);
