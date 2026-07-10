@@ -4,7 +4,7 @@ import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { PriorityBadge } from "./priority-badge";
+import { PriorityDropdown } from "./priority-dropdown";
 import { StatusDropdown } from "./status-dropdown";
 import { formatDate, generateIssueCode } from "@/lib/utils";
 import { bulkUpdateStatus } from "@/app/actions/issues";
@@ -253,7 +253,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [] }: IssueTableProps)
                               {issue.module ?? <span className="text-gray-300 dark:text-gray-600">—</span>}
                             </td>
                             <td className="px-4 py-3">
-                              <PriorityBadge priority={issue.priority} />
+                              <PriorityDropdown issueId={issue.id} priority={issue.priority} />
                             </td>
                             <td className="px-4 py-3">
                               <StatusDropdown issueId={issue.id} status={issue.status} />

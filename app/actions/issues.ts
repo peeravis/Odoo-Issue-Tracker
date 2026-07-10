@@ -320,6 +320,21 @@ export async function resolveIssue(issueId: string, solution: string) {
   revalidatePath(`/issues/${issueId}`);
 }
 
+export async function updateIssuePriority(issueId: string, priority: IssuePriority) {
+  const session = await requireSession();
+  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { priority: true } });
+  if (!existing) throw new Error("Not found");
+  await prisma.issue.update({
+    where: { id: issueId },
+    data: { priority, modifiedById: session.userId, lastModifiedAt: new Date() },
+  });
+  await prisma.activityLog.create({
+    data: { issueId, userId: session.userId, action: "priority_changed", oldValue: existing.priority, newValue: priority },
+  });
+  revalidatePath("/issues");
+  revalidatePath(`/issues/${issueId}`);
+}
+
 export async function bulkUpdateStatus(issueIds: string[], status: IssueStatus) {
   const session = await requireSession();
 
