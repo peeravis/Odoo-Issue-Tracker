@@ -43,27 +43,18 @@ async function main() {
   const departments = ["IT", "Finance", "Operations", "Sales", "Support"];
 
   for (let i = 0; i < issueTypes.length; i++) {
-    await prisma.dropdownMaster.upsert({
-      where: { type_label: { type: "issueType", label: issueTypes[i] } },
-      update: {},
-      create: { type: "issueType", label: issueTypes[i], sortOrder: i },
-    });
+    const e = await prisma.dropdownMaster.findFirst({ where: { type: "issueType", label: issueTypes[i], projectId: null } });
+    if (!e) await prisma.dropdownMaster.create({ data: { type: "issueType", label: issueTypes[i], sortOrder: i } });
   }
 
   for (let i = 0; i < modules.length; i++) {
-    await prisma.dropdownMaster.upsert({
-      where: { type_label: { type: "module", label: modules[i] } },
-      update: {},
-      create: { type: "module", label: modules[i], sortOrder: i },
-    });
+    const e = await prisma.dropdownMaster.findFirst({ where: { type: "module", label: modules[i], projectId: null } });
+    if (!e) await prisma.dropdownMaster.create({ data: { type: "module", label: modules[i], sortOrder: i } });
   }
 
   for (let i = 0; i < departments.length; i++) {
-    await prisma.dropdownMaster.upsert({
-      where: { type_label: { type: "department", label: departments[i] } },
-      update: {},
-      create: { type: "department", label: departments[i], sortOrder: i },
-    });
+    const e = await prisma.dropdownMaster.findFirst({ where: { type: "department", label: departments[i], projectId: null } });
+    if (!e) await prisma.dropdownMaster.create({ data: { type: "department", label: departments[i], sortOrder: i } });
   }
 
   await prisma.client.upsert({
