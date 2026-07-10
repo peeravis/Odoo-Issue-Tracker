@@ -182,10 +182,10 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
       {/* Clients */}
       <Section title="Clients">
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          Client เป็น Master Data แยกต่างหาก — จัดการได้ที่
+          Client จัดการรวมอยู่ใน Master Data
         </p>
-        <Link href="/clients" className="btn-secondary inline-flex items-center gap-2">
-          จัดการ Client Master Data →
+        <Link href="/master-data" className="btn-secondary inline-flex items-center gap-2">
+          จัดการ Master Data →
         </Link>
       </Section>
 

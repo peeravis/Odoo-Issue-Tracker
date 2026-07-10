@@ -30,7 +30,6 @@ const memberItems = [
 const adminOnlyItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/master-data", label: "Master Data", icon: Database },
-  { href: "/clients", label: "Clients", icon: Building2 },
   { href: "/users", label: "Users", icon: Users },
 ];
 
