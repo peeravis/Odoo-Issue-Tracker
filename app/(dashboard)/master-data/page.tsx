@@ -16,7 +16,7 @@ export default async function MasterDataPage() {
   const session = await getSession();
   if (!session || (session.role !== "admin" && session.role !== "pm")) redirect("/projects");
 
-  const items = await prisma.dropdownMaster.findMany({ orderBy: [{ type: "asc" }, { sortOrder: "asc" }] });
+  const items = await prisma.dropdownMaster.findMany({ where: { projectId: null }, orderBy: [{ type: "asc" }, { sortOrder: "asc" }] });
 
   const byType = (type: string) => items.filter((i) => i.type === type);
 

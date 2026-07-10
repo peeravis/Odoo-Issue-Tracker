@@ -15,8 +15,8 @@ export async function addDropdownMaster(type: string, label: string) {
   if (!trimmed) return;
   const count = await prisma.dropdownMaster.count({ where: { type } });
   await prisma.dropdownMaster.upsert({
-    where: { type_label: { type, label: trimmed } },
-    create: { type, label: trimmed, sortOrder: count },
+    where: { type_label_projectId: { type, label: trimmed, projectId: null } },
+    create: { type, label: trimmed, sortOrder: count, projectId: null },
     update: {},
   });
   revalidatePath("/master-data");

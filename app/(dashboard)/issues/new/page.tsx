@@ -39,6 +39,20 @@ export default async function NewIssuePage({
 
   const selectedProjectId = sp.projectId ?? userProjects[0]?.id ?? "";
 
+  async function getDropdowns(type: string, projectId: string) {
+    if (projectId) {
+      const projectSpecific = await prisma.dropdownMaster.findMany({
+        where: { type, projectId },
+        orderBy: { sortOrder: "asc" },
+      });
+      if (projectSpecific.length > 0) return projectSpecific;
+    }
+    return prisma.dropdownMaster.findMany({
+      where: { type, projectId: null },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
   const [projectData, assigneeUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
     selectedProjectId
       ? prisma.project.findUnique({
@@ -52,9 +66,9 @@ export default async function NewIssuePage({
       orderBy: { name: "asc" },
     }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.dropdownMaster.findMany({ where: { type: "issueType" }, orderBy: { sortOrder: "asc" } }),
-    prisma.dropdownMaster.findMany({ where: { type: "module" }, orderBy: { sortOrder: "asc" } }),
-    prisma.dropdownMaster.findMany({ where: { type: "department" }, orderBy: { sortOrder: "asc" } }),
+    getDropdowns("issueType", selectedProjectId),
+    getDropdowns("module", selectedProjectId),
+    getDropdowns("department", selectedProjectId),
   ]);
 
   return (

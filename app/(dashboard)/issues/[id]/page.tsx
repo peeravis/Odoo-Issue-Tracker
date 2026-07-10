@@ -66,6 +66,18 @@ export default async function IssueDetailPage({
     if (!membership) notFound();
   }
 
+  async function getDropdowns(type: string, projectId: string) {
+    const projectSpecific = await prisma.dropdownMaster.findMany({
+      where: { type, projectId },
+      orderBy: { sortOrder: "asc" },
+    });
+    if (projectSpecific.length > 0) return projectSpecific;
+    return prisma.dropdownMaster.findMany({
+      where: { type, projectId: null },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
   const [allUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
     prisma.user.findMany({
       where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
@@ -73,9 +85,9 @@ export default async function IssueDetailPage({
       orderBy: { name: "asc" },
     }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.dropdownMaster.findMany({ where: { type: "issueType" }, orderBy: { sortOrder: "asc" } }),
-    prisma.dropdownMaster.findMany({ where: { type: "module" }, orderBy: { sortOrder: "asc" } }),
-    prisma.dropdownMaster.findMany({ where: { type: "department" }, orderBy: { sortOrder: "asc" } }),
+    getDropdowns("issueType", issue.projectId),
+    getDropdowns("module", issue.projectId),
+    getDropdowns("department", issue.projectId),
   ]);
 
   const isEditing = edit === "1";

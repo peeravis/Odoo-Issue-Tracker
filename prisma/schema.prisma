@@ -77,16 +77,19 @@ model Project {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  members   ProjectMember[]
-  issues    Issue[]
-  fieldDefs ProjectFieldDefinition[]
+  members       ProjectMember[]
+  issues        Issue[]
+  fieldDefs     ProjectFieldDefinition[]
+  dropdownItems DropdownMaster[]
+  statusConfigs ProjectStatusConfig[]
 }
 
 model ProjectMember {
-  id        String   @id @default(cuid())
-  projectId String
-  userId    String
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  projectId   String
+  userId      String
+  projectRole String   @default("developer")
+  createdAt   DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -104,12 +107,29 @@ model Client {
 }
 
 model DropdownMaster {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   type      String
   label     String
-  sortOrder Int    @default(0)
+  sortOrder Int     @default(0)
+  projectId String?
 
-  @@unique([type, label])
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([type, label, projectId])
+}
+
+model ProjectStatusConfig {
+  id        String  @id @default(cuid())
+  projectId String
+  statusKey String
+  label     String
+  color     String?
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, statusKey])
 }
 
 model ProjectFieldDefinition {

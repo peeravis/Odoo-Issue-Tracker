@@ -47,11 +47,13 @@ export async function updateProject(projectId: string, formData: FormData) {
   revalidatePath("/projects");
 }
 
-export async function addProjectMember(projectId: string, userId: string) {
+export async function addProjectMember(projectId: string, formData: FormData) {
   await requireAdmin();
+  const userId = formData.get("userId") as string;
+  const projectRole = (formData.get("projectRole") as string) || "developer";
   await prisma.projectMember.upsert({
     where: { projectId_userId: { projectId, userId } },
-    create: { projectId, userId },
+    create: { projectId, userId, projectRole },
     update: {},
   });
   revalidatePath(`/projects/${projectId}/settings`);
@@ -97,4 +99,74 @@ export async function deleteFieldDefinition(projectId: string, fieldId: string) 
   revalidatePath(`/projects/${projectId}/settings`);
 }
 
+// Per-project dropdown actions
+export async function addProjectDropdown(projectId: string, formData: FormData) {
+  await requireAdmin();
+  const type = formData.get("type") as string;
+  const label = (formData.get("label") as string)?.trim();
+  if (!label) return;
+  const count = await prisma.dropdownMaster.count({ where: { type, projectId } });
+  await prisma.dropdownMaster.upsert({
+    where: { type_label_projectId: { type, label, projectId } },
+    create: { type, label, projectId, sortOrder: count },
+    update: {},
+  });
+  revalidatePath(`/projects/${projectId}/settings`);
+  revalidatePath(`/issues/new`);
+  revalidatePath("/issues", "layout");
+}
+
+export async function deleteProjectDropdown(id: string, projectId: string) {
+  await requireAdmin();
+  await prisma.dropdownMaster.delete({ where: { id } });
+  revalidatePath(`/projects/${projectId}/settings`);
+  revalidatePath(`/issues/new`);
+  revalidatePath("/issues", "layout");
+}
+
+// Per-project status config
+// Reads indexed form fields: configs[N][statusKey], configs[N][label], configs[N][isActive], configs[N][sortOrder]
+export async function upsertStatusConfig(projectId: string, formData: FormData) {
+  await requireAdmin();
+
+  // Collect all indexed entries
+  const entries: Array<{ statusKey: string; label: string; isActive: boolean; sortOrder: number }> = [];
+  let idx = 0;
+  while (formData.has(`configs[${idx}][statusKey]`)) {
+    const statusKey = formData.get(`configs[${idx}][statusKey]`) as string;
+    const label = (formData.get(`configs[${idx}][label]`) as string) || statusKey;
+    const isActive = formData.get(`configs[${idx}][isActive]`) === "true";
+    const sortOrder = parseInt((formData.get(`configs[${idx}][sortOrder]`) as string) || "0");
+    entries.push({ statusKey, label, isActive, sortOrder });
+    idx++;
+  }
+
+  for (const cfg of entries) {
+    await prisma.projectStatusConfig.upsert({
+      where: { projectId_statusKey: { projectId, statusKey: cfg.statusKey } },
+      create: {
+        projectId,
+        statusKey: cfg.statusKey,
+        label: cfg.label,
+        isActive: cfg.isActive,
+        sortOrder: cfg.sortOrder,
+      },
+      update: {
+        label: cfg.label,
+        isActive: cfg.isActive,
+      },
+    });
+  }
+  revalidatePath(`/projects/${projectId}/settings`);
+}
+
+// Per-project member role
+export async function updateProjectMemberRole(projectId: string, userId: string, role: string) {
+  await requireAdmin();
+  await prisma.projectMember.update({
+    where: { projectId_userId: { projectId, userId } },
+    data: { projectRole: role },
+  });
+  revalidatePath(`/projects/${projectId}/settings`);
+}
 
