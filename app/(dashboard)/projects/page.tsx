@@ -46,13 +46,19 @@ export default async function ProjectsPage({
     orderBy: { createdAt: "desc" },
   });
 
+  const groupFilter = selectedGroupId === "__none__"
+    ? { groupId: null }
+    : selectedGroupId
+      ? { groupId: selectedGroupId }
+      : {};
+
   const [activeCount, closedCount] = await Promise.all([
     isAdmin
-      ? prisma.project.count({ where: { status: "active" } })
-      : prisma.projectMember.count({ where: { userId: session.userId, project: { status: "active" } } }),
+      ? prisma.project.count({ where: { status: "active", ...groupFilter } })
+      : prisma.projectMember.count({ where: { userId: session.userId, project: { status: "active", ...groupFilter } } }),
     isAdmin
-      ? prisma.project.count({ where: { status: "closed" } })
-      : prisma.projectMember.count({ where: { userId: session.userId, project: { status: "closed" } } }),
+      ? prisma.project.count({ where: { status: "closed", ...groupFilter } })
+      : prisma.projectMember.count({ where: { userId: session.userId, project: { status: "closed", ...groupFilter } } }),
   ]);
 
   const ungroupedCount = await prisma.project.count({
