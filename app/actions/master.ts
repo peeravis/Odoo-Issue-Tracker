@@ -13,12 +13,11 @@ export async function addDropdownMaster(type: string, label: string) {
   await requireAdmin();
   const trimmed = label.trim();
   if (!trimmed) return;
-  const count = await prisma.dropdownMaster.count({ where: { type } });
-  await prisma.dropdownMaster.upsert({
-    where: { type_label_projectId: { type, label: trimmed, projectId: null } },
-    create: { type, label: trimmed, sortOrder: count, projectId: null },
-    update: {},
-  });
+  const existing = await prisma.dropdownMaster.findFirst({ where: { type, label: trimmed, projectId: null } });
+  if (!existing) {
+    const count = await prisma.dropdownMaster.count({ where: { type } });
+    await prisma.dropdownMaster.create({ data: { type, label: trimmed, sortOrder: count, projectId: null } });
+  }
   revalidatePath("/master-data");
   revalidatePath("/issues/new");
   revalidatePath("/issues", "layout");
