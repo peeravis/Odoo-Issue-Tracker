@@ -5,6 +5,7 @@ import { FolderKanban, Settings, ArrowLeft, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { FadeUp, StaggerList, StaggerItem } from "@/components/ui/motion";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
+import { CreateGroupDialog } from "@/components/projects/create-group-dialog";
 import type { ProjectStatus } from "@/app/generated/prisma/enums";
 
 export default async function ProjectsPage({
@@ -90,7 +91,9 @@ export default async function ProjectsPage({
               </p>
             </div>
           </div>
-          {isAdmin && statusFilter === "active" && <CreateProjectDialog />}
+          {isAdmin && statusFilter === "active" && (
+            selectedGroupId ? <CreateProjectDialog /> : <CreateGroupDialog />
+          )}
         </div>
       </FadeUp>
 
