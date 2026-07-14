@@ -440,12 +440,12 @@ export default async function IssueDetailPage({
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Details</h3>
 
-            <DetailRow label="Project" value={issue.project.name} />
-            <DetailRow label="Client" value={issue.client?.name} />
-            <DetailRow label="หน่วยงาน" value={issue.department} />
-            <DetailRow label="Issue Type" value={issue.issueType} />
-            <DetailRow label="Module" value={issue.module} />
-            <AssigneeRow name={issue.assignee?.name} extraRoles={issue.assignee?.extraRoles} />
+            <DetailRow label="Project" value={issue.project.name} href={`/issues?projectId=${issue.projectId}`} />
+            <DetailRow label="Client" value={issue.client?.name} href={issue.clientId ? `/issues?clientId=${issue.clientId}` : undefined} />
+            <DetailRow label="หน่วยงาน" value={issue.department} href={issue.department ? `/issues?department=${encodeURIComponent(issue.department)}` : undefined} />
+            <DetailRow label="Issue Type" value={issue.issueType} href={issue.issueType ? `/issues?issueType=${encodeURIComponent(issue.issueType)}` : undefined} />
+            <DetailRow label="Module" value={issue.module} href={issue.module ? `/issues?module=${encodeURIComponent(issue.module)}` : undefined} />
+            <AssigneeRow name={issue.assignee?.name} extraRoles={issue.assignee?.extraRoles} href={issue.assigneeId ? `/issues?assigneeId=${issue.assigneeId}` : undefined} />
             <DetailRow label="Logged By" value={issue.loggedBy?.name} />
             <DetailRow label="Created By" value={issue.createdBy.name} />
             <DetailRow label="Modified By" value={issue.modifiedBy?.name} />
@@ -538,42 +538,52 @@ export default async function IssueDetailPage({
   );
 }
 
-function AssigneeRow({ name, extraRoles }: { name?: string | null; extraRoles?: string[] }) {
+function AssigneeRow({ name, extraRoles, href }: { name?: string | null; extraRoles?: string[]; href?: string }) {
   const role = extraRoles?.includes("aspd") ? "ASPD" : extraRoles?.includes("vendor") ? "Vendor" : null;
+  const inner = name ? (
+    <div className="flex items-center gap-2">
+      <div className="h-6 w-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+        {name.charAt(0).toUpperCase()}
+      </div>
+      <div className="flex flex-col items-end">
+        <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline">{name}</span>
+        {role && <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{role}</span>}
+      </div>
+    </div>
+  ) : (
+    <span className="text-xs text-gray-300 dark:text-gray-600">-</span>
+  );
+
   return (
     <div className="flex justify-between items-center gap-2">
       <span className="text-xs text-gray-400 flex-shrink-0">Assignee</span>
-      {name ? (
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-            {name.charAt(0).toUpperCase()}
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{name}</span>
-            {role && (
-              <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{role}</span>
-            )}
-          </div>
-        </div>
-      ) : (
-        <span className="text-xs text-gray-300 dark:text-gray-600">-</span>
-      )}
+      {name && href ? (
+        <Link href={href} className="group">{inner}</Link>
+      ) : inner}
     </div>
   );
 }
 
-function DetailRow({ label, value, overdue }: { label: string; value?: string | null; overdue?: boolean }) {
+function DetailRow({ label, value, overdue, href }: { label: string; value?: string | null; overdue?: boolean; href?: string }) {
+  const textClass = `text-xs text-right flex items-center gap-1.5 ${overdue ? "text-red-500 font-medium" : "text-gray-800 dark:text-gray-200"}`;
+  const content = (
+    <>
+      {value ?? "-"}
+      {overdue && (
+        <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full font-semibold">
+          Overdue
+        </span>
+      )}
+    </>
+  );
   return (
     <div className="flex justify-between gap-2">
       <span className="text-xs text-gray-400 flex-shrink-0">{label}</span>
-      <span className={`text-xs text-right flex items-center gap-1.5 ${overdue ? "text-red-500 font-medium" : "text-gray-800 dark:text-gray-200"}`}>
-        {value ?? "-"}
-        {overdue && (
-          <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full font-semibold">
-            Overdue
-          </span>
-        )}
-      </span>
+      {value && href ? (
+        <Link href={href} className={`${textClass} hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline`}>{content}</Link>
+      ) : (
+        <span className={textClass}>{content}</span>
+      )}
     </div>
   );
 }

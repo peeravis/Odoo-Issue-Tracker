@@ -13,6 +13,9 @@ interface IssueFiltersProps {
   projects: Project[];
   users: UserItem[];
   clients: Client[];
+  modules: string[];
+  issueTypes: string[];
+  departments: string[];
   sessionUserId: string;
   defaults: {
     search?: string;
@@ -21,6 +24,9 @@ interface IssueFiltersProps {
     priority?: string;
     status?: string;
     assigneeId?: string;
+    module?: string;
+    issueType?: string;
+    department?: string;
     from?: string;
     to?: string;
     groupBy?: string;
@@ -34,7 +40,7 @@ const DUE_PRESETS = [
   { key: "week", label: "Due This Week", icon: CalendarDays, color: "text-blue-500 border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800" },
 ];
 
-export function IssueFilters({ projects, users, clients, sessionUserId, defaults }: IssueFiltersProps) {
+export function IssueFilters({ projects, users, clients, modules, issueTypes, departments, sessionUserId, defaults }: IssueFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -182,6 +188,48 @@ export function IssueFilters({ projects, users, clients, sessionUserId, defaults
               {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
           </div>
+
+          {modules.length > 0 && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Module</label>
+              <select
+                defaultValue={defaults.module ?? ""}
+                onChange={(e) => handleSelect("module", e.target.value)}
+                className="input-base w-full"
+              >
+                <option value="">All</option>
+                {modules.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+          )}
+
+          {issueTypes.length > 0 && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Issue Type</label>
+              <select
+                defaultValue={defaults.issueType ?? ""}
+                onChange={(e) => handleSelect("issueType", e.target.value)}
+                className="input-base w-full"
+              >
+                <option value="">All</option>
+                {issueTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          )}
+
+          {departments.length > 0 && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Department</label>
+              <select
+                defaultValue={defaults.department ?? ""}
+                onChange={(e) => handleSelect("department", e.target.value)}
+                className="input-base w-full"
+              >
+                <option value="">All</option>
+                {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs text-gray-500 mb-1">From</label>

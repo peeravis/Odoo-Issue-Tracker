@@ -88,7 +88,7 @@ export default async function IssuesPage({
 
   const page = Math.max(1, parseInt(sp.page ?? "1"));
 
-  const [totalCount, issues, allUsers, allClients] = await Promise.all([
+  const [totalCount, issues, allUsers, allClients, distinctModules, distinctIssueTypes, distinctDepartments] = await Promise.all([
     prisma.issue.count({ where }),
     prisma.issue.findMany({
       where,
@@ -107,6 +107,9 @@ export default async function IssuesPage({
     }),
     prisma.user.findMany({ where: { isActive: true }, select: { id: true, name: true } }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.issue.findMany({ where: { projectId: { in: projectIds }, module: { not: null } }, select: { module: true }, distinct: ["module"], orderBy: { module: "asc" } }),
+    prisma.issue.findMany({ where: { projectId: { in: projectIds }, issueType: { not: null } }, select: { issueType: true }, distinct: ["issueType"], orderBy: { issueType: "asc" } }),
+    prisma.issue.findMany({ where: { projectId: { in: projectIds }, department: { not: null } }, select: { department: true }, distinct: ["department"], orderBy: { department: "asc" } }),
   ]);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -155,6 +158,9 @@ export default async function IssuesPage({
           projects={userProjects}
           users={allUsers}
           clients={allClients}
+          modules={distinctModules.map((r) => r.module!)}
+          issueTypes={distinctIssueTypes.map((r) => r.issueType!)}
+          departments={distinctDepartments.map((r) => r.department!)}
           sessionUserId={session.userId}
           defaults={{
             search: sp.search,
@@ -163,6 +169,9 @@ export default async function IssuesPage({
             priority: sp.priority,
             status: sp.status,
             assigneeId: sp.assigneeId,
+            module: sp.module,
+            issueType: sp.issueType,
+            department: sp.department,
             from: sp.from,
             to: sp.to,
             groupBy: sp.groupBy,
