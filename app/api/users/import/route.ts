@@ -53,14 +53,15 @@ export async function POST(request: NextRequest) {
   sheet.eachRow((row, rowNum) => {
     // Skip header row and note row
     if (rowNum <= 2) return;
-    const name = String(row.getCell(1).value ?? "").trim();
+    const rawName = String(row.getCell(1).value ?? "").trim();
     const email = String(row.getCell(2).value ?? "").trim().toLowerCase();
     const password = String(row.getCell(3).value ?? "").trim();
     const role = String(row.getCell(4).value ?? "member").trim().toLowerCase();
     const status = String(row.getCell(5).value ?? "active").trim().toLowerCase();
     const projects = String(row.getCell(6).value ?? "").trim();
 
-    if (!name || !email) return;
+    if (!email) return;
+    const name = rawName || email.split("@")[0];
     rows.push({ name, email, password, role, status, projects });
   });
 
