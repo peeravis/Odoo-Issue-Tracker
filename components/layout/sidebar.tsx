@@ -21,6 +21,8 @@ import { motion, AnimatePresence } from "framer-motion";
 interface SidebarProps {
   userRole: string;
   userName: string;
+  appName?: string;
+  logoUrl?: string;
 }
 
 const memberItems = [
@@ -35,7 +37,7 @@ const adminOnlyItems = [
   { href: "/config", label: "Config", icon: Settings2 },
 ];
 
-export function Sidebar({ userRole, userName }: SidebarProps) {
+export function Sidebar({ userRole, userName, appName = "Issue Tracker", logoUrl }: SidebarProps) {
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
 
@@ -55,11 +57,16 @@ export function Sidebar({ userRole, userName }: SidebarProps) {
     <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-gray-950 flex flex-col border-r border-white/5">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5">
-        <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0">
-          <Bug className="h-4.5 w-4.5 text-white" />
+        <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0 overflow-hidden">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
+          ) : (
+            <Bug className="h-4.5 w-4.5 text-white" />
+          )}
         </div>
         <div>
-          <p className="text-sm font-semibold text-white leading-none">Issue Tracker</p>
+          <p className="text-sm font-semibold text-white leading-none">{appName}</p>
           <p className="text-xs text-gray-500 mt-0.5">Project Management</p>
         </div>
       </div>

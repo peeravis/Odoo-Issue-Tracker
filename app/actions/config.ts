@@ -2,10 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getConfigs } from "@/lib/config";
 import nodemailer from "nodemailer";
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
 async function requireAdmin() {
   const session = await getSession();
@@ -25,11 +29,42 @@ async function upsertMany(entries: Record<string, string>) {
 
 export async function saveAppConfig(formData: FormData) {
   await requireAdmin();
+  const timeout = parseInt((formData.get("app.sessionTimeout") as string) || "480");
   await upsertMany({
     "app.name": (formData.get("app.name") as string) || "Issue Tracker",
     "app.baseUrl": (formData.get("app.baseUrl") as string) || "http://localhost:3000",
+    "app.sessionTimeout": String(Math.max(15, Math.min(10080, isNaN(timeout) ? 480 : timeout))),
   });
   revalidatePath("/config");
+  revalidatePath("/", "layout");
+  redirect("/config?tab=app&saved=1");
+}
+
+export async function uploadLogo(formData: FormData) {
+  await requireAdmin();
+  const file = formData.get("logo") as File | null;
+  if (!file || file.size === 0) redirect("/config?tab=app");
+
+  const allowed = ["image/png", "image/jpeg", "image/svg+xml", "image/webp", "image/gif"];
+  if (!allowed.includes(file.type)) redirect("/config?tab=app&error=type");
+  if (file.size > 2 * 1024 * 1024) redirect("/config?tab=app&error=size");
+
+  await mkdir(UPLOAD_DIR, { recursive: true });
+  const ext = path.extname(file.name) || ".png";
+  const fileName = `logo${ext}`;
+  await writeFile(path.join(UPLOAD_DIR, fileName), Buffer.from(await file.arrayBuffer()));
+
+  await upsertMany({ "app.logoUrl": `/api/uploads/${fileName}` });
+  revalidatePath("/config");
+  revalidatePath("/", "layout");
+  redirect("/config?tab=app&saved=1");
+}
+
+export async function removeLogo() {
+  await requireAdmin();
+  await upsertMany({ "app.logoUrl": "" });
+  revalidatePath("/config");
+  revalidatePath("/", "layout");
   redirect("/config?tab=app&saved=1");
 }
 

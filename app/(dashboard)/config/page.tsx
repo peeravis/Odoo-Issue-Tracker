@@ -1,10 +1,10 @@
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { getConfigs, CONFIG_DEFAULTS } from "@/lib/config";
-import { saveAppConfig, saveEmailConfig, saveIssueDefaults } from "@/app/actions/config";
+import { saveAppConfig, saveEmailConfig, saveIssueDefaults, uploadLogo, removeLogo } from "@/app/actions/config";
 import { TestEmailButton } from "@/components/config/test-email-button";
 import { FadeUp } from "@/components/ui/motion";
-import { Settings, Mail, Bug, Shield, CheckCircle } from "lucide-react";
+import { Settings, Mail, Bug, Shield, CheckCircle, Upload, X } from "lucide-react";
 import Link from "next/link";
 
 const TABS = [
@@ -83,10 +83,49 @@ export default async function ConfigPage({
 
       <FadeUp delay={0.06}>
         {tab === "app" && (
-          <Section title="App Settings" description="ชื่อแอปและ URL หลักที่ใช้ในอีเมลและ link ต่างๆ">
+          <Section title="App Settings" description="ชื่อแอป, URL หลัก, logo และการตั้งค่าทั่วไป">
+            {/* Logo upload */}
+            <div className="space-y-3 pb-5 border-b border-gray-100 dark:border-gray-700">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Logo</p>
+              <div className="flex items-center gap-4">
+                {cfg["app.logoUrl"] ? (
+                  <div className="relative h-16 w-16 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 flex items-center justify-center p-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={cfg["app.logoUrl"]} alt="App Logo" className="h-full w-full object-contain" />
+                  </div>
+                ) : (
+                  <div className="h-16 w-16 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                    <Upload className="h-6 w-6 text-gray-400" />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <form action={uploadLogo}>
+                    <label className="cursor-pointer btn-secondary inline-flex items-center gap-2 text-sm">
+                      <Upload className="h-4 w-4" />
+                      {cfg["app.logoUrl"] ? "เปลี่ยน Logo" : "อัปโหลด Logo"}
+                      <input type="file" name="logo" accept="image/*" className="hidden" onChange={(e) => e.currentTarget.form?.requestSubmit()} />
+                    </label>
+                  </form>
+                  {cfg["app.logoUrl"] && (
+                    <form action={removeLogo}>
+                      <button type="submit" className="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 transition-colors">
+                        <X className="h-3 w-3" /> ลบ Logo
+                      </button>
+                    </form>
+                  )}
+                  <p className="text-xs text-gray-400">PNG, JPG, SVG, WebP · ไม่เกิน 2 MB</p>
+                </div>
+              </div>
+            </div>
+
             <form action={saveAppConfig} className="space-y-4">
               <Field label="ชื่อแอป" name="app.name" defaultValue={cfg["app.name"]} placeholder="Issue Tracker" />
               <Field label="Base URL" name="app.baseUrl" defaultValue={cfg["app.baseUrl"]} placeholder="https://your-domain.com" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Session Timeout (นาที)</label>
+                <input name="app.sessionTimeout" defaultValue={cfg["app.sessionTimeout"] || "480"} placeholder="480" type="number" min="15" max="10080" className="input-base w-40" />
+                <p className="text-xs text-gray-400 mt-1">ระยะเวลาที่ session หมดอายุหลังจาก login · ค่า default 480 นาที (8 ชั่วโมง)</p>
+              </div>
               <p className="text-xs text-gray-400">Base URL ใช้ใน link ที่ส่งในอีเมล notification</p>
               <SaveButton />
             </form>

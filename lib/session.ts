@@ -1,6 +1,7 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { getConfig } from "./config";
 
 export type SessionPayload = {
   userId: string;
@@ -35,8 +36,15 @@ export async function decrypt(session?: string): Promise<SessionPayload | null> 
 }
 
 export async function createSession(payload: Omit<SessionPayload, "expiresAt">) {
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const session = await encrypt({ ...payload, expiresAt });
+  const timeoutMinutes = parseInt(await getConfig("app.sessionTimeout")) || 480;
+  const expiresAt = new Date(Date.now() + timeoutMinutes * 60 * 1000);
+  const jwtExpiry = `${timeoutMinutes}m`;
+  const token = new SignJWT({ ...payload, expiresAt } as unknown as Record<string, unknown>)
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(jwtExpiry)
+    .sign(encodedKey);
+  const session = await token;
   const cookieStore = await cookies();
   cookieStore.set("session", session, {
     httpOnly: true,

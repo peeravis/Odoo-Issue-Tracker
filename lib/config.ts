@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 export const CONFIG_DEFAULTS: Record<string, string> = {
   "app.name": "Issue Tracker",
   "app.baseUrl": process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000",
+  "app.logoUrl": "",
+  "app.sessionTimeout": "480",
   "email.enabled": "true",
   "email.smtpHost": process.env.SMTP_HOST ?? "",
   "email.smtpPort": process.env.SMTP_PORT ?? "587",
