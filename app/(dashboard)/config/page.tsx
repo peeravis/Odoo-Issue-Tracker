@@ -1,8 +1,9 @@
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { getConfigs, CONFIG_DEFAULTS } from "@/lib/config";
-import { saveAppConfig, saveEmailConfig, saveIssueDefaults, uploadLogo, removeLogo, saveRolePermissions, createRole, deleteRole } from "@/app/actions/config";
+import { saveAppConfig, saveEmailConfig, saveIssueDefaults, removeLogo, saveRolePermissions, createRole, deleteRole } from "@/app/actions/config";
 import { TestEmailButton } from "@/components/config/test-email-button";
+import { LogoUploadForm } from "@/components/config/logo-upload-form";
 import { FadeUp } from "@/components/ui/motion";
 import { Settings, Mail, Bug, Shield, CheckCircle, Upload, X, Trash2, Plus } from "lucide-react";
 import Link from "next/link";
@@ -93,13 +94,7 @@ export default async function ConfigPage({
                   </div>
                 )}
                 <div className="space-y-2">
-                  <form action={uploadLogo}>
-                    <label className="cursor-pointer btn-secondary inline-flex items-center gap-2 text-sm">
-                      <Upload className="h-4 w-4" />
-                      {cfg["app.logoUrl"] ? "เปลี่ยน Logo" : "อัปโหลด Logo"}
-                      <input type="file" name="logo" accept="image/*" className="hidden" onChange={(e) => e.currentTarget.form?.requestSubmit()} />
-                    </label>
-                  </form>
+                  <LogoUploadForm hasLogo={!!cfg["app.logoUrl"]} />
                   {cfg["app.logoUrl"] && (
                     <form action={removeLogo}>
                       <button type="submit" className="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 transition-colors">
