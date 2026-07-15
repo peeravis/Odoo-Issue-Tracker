@@ -1,13 +1,5 @@
 import nodemailer from "nodemailer";
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST ?? "localhost",
-  port: Number(process.env.SMTP_PORT ?? 587),
-  secure: process.env.SMTP_SECURE === "true",
-  auth: process.env.SMTP_USER
-    ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-    : undefined,
-});
+import { getConfigs } from "./config";
 
 export async function sendAssignmentEmail({
   to,
@@ -24,10 +16,31 @@ export async function sendAssignmentEmail({
   issueUrl: string;
   projectName: string;
 }) {
-  if (!process.env.SMTP_HOST) return; // Skip if not configured
+  const cfg = await getConfigs([
+    "email.enabled",
+    "email.smtpHost",
+    "email.smtpPort",
+    "email.smtpSecure",
+    "email.smtpUser",
+    "email.smtpPass",
+    "email.fromName",
+    "email.fromEmail",
+  ]);
+
+  if (cfg["email.enabled"] !== "true") return;
+  if (!cfg["email.smtpHost"]) return;
+
+  const transporter = nodemailer.createTransport({
+    host: cfg["email.smtpHost"],
+    port: Number(cfg["email.smtpPort"] || 587),
+    secure: cfg["email.smtpSecure"] === "true",
+    auth: cfg["email.smtpUser"]
+      ? { user: cfg["email.smtpUser"], pass: cfg["email.smtpPass"] }
+      : undefined,
+  });
 
   await transporter.sendMail({
-    from: process.env.SMTP_FROM ?? "noreply@issuetracker.local",
+    from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to,
     subject: `[${issueCode}] You have been assigned an issue — ${issueTitle}`,
     html: `

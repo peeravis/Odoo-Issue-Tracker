@@ -11,6 +11,7 @@ import {
   Building2,
   Database,
   KeyRound,
+  Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/actions/auth";
@@ -31,6 +32,7 @@ const adminOnlyItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/master-data", label: "Master Data", icon: Database },
   { href: "/users", label: "Users", icon: Users },
+  { href: "/config", label: "Config", icon: Settings2 },
 ];
 
 export function Sidebar({ userRole, userName }: SidebarProps) {
@@ -46,7 +48,7 @@ export function Sidebar({ userRole, userName }: SidebarProps) {
   const isAdmin = userRole === "admin";
 
   const allItems = isAdmin
-    ? [adminOnlyItems[0], ...memberItems, adminOnlyItems[1], adminOnlyItems[2]]
+    ? [adminOnlyItems[0], ...memberItems, adminOnlyItems[1], adminOnlyItems[2], adminOnlyItems[3]]
     : memberItems;
 
   return (
