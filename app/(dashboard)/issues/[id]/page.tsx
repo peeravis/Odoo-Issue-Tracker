@@ -146,7 +146,7 @@ export default async function IssueDetailPage({
                 <input name="title" defaultValue={issue.title} required className="input-base w-full" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client</label>
                   <select name="clientId" defaultValue={issue.clientId ?? ""} className="input-base w-full">
@@ -332,7 +332,7 @@ export default async function IssueDetailPage({
                 <>
                   <hr className="border-gray-100 dark:border-gray-700" />
                   <h3 className="font-medium text-gray-900 dark:text-white text-sm">Custom Fields</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     {issue.project.fieldDefs.map((f) => (
                       <div key={f.id}>
                         <p className="text-xs text-gray-400">{f.label}</p>
