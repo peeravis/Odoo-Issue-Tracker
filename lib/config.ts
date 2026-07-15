@@ -16,24 +16,34 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
 };
 
 export async function getConfig(key: string): Promise<string> {
-  const row = await prisma.systemConfig.findUnique({ where: { key } });
-  return row?.value ?? CONFIG_DEFAULTS[key] ?? "";
+  try {
+    const row = await prisma.systemConfig.findUnique({ where: { key } });
+    return row?.value ?? CONFIG_DEFAULTS[key] ?? "";
+  } catch {
+    return CONFIG_DEFAULTS[key] ?? "";
+  }
 }
 
 export async function getConfigs(keys: string[]): Promise<Record<string, string>> {
-  const rows = await prisma.systemConfig.findMany({ where: { key: { in: keys } } });
-  const map = new Map(rows.map((r) => [r.key, r.value]));
   const result: Record<string, string> = {};
-  for (const key of keys) {
-    result[key] = map.get(key) ?? CONFIG_DEFAULTS[key] ?? "";
+  for (const key of keys) result[key] = CONFIG_DEFAULTS[key] ?? "";
+  try {
+    const rows = await prisma.systemConfig.findMany({ where: { key: { in: keys } } });
+    for (const row of rows) result[row.key] = row.value;
+  } catch {
+    // table not yet migrated — return defaults
   }
   return result;
 }
 
 export async function setConfig(key: string, value: string): Promise<void> {
-  await prisma.systemConfig.upsert({
-    where: { key },
-    create: { key, value },
-    update: { value },
-  });
+  try {
+    await prisma.systemConfig.upsert({
+      where: { key },
+      create: { key, value },
+      update: { value },
+    });
+  } catch {
+    // table not yet migrated
+  }
 }
