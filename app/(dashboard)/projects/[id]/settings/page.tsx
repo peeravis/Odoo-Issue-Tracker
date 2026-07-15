@@ -14,6 +14,7 @@ import {
   upsertStatusConfig,
   updateProjectMemberRole,
   updateProjectGroup,
+  deleteProject,
 } from "@/app/actions/projects";
 import { ArrowLeft, Plus } from "lucide-react";
 import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
@@ -369,6 +370,20 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
           </div>
         </form>
       </Section>
+
+      {/* Danger Zone */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-900/50 p-6">
+        <h2 className="font-semibold text-red-600 dark:text-red-400 mb-1">Danger Zone</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          ลบ Project นี้และข้อมูลทั้งหมดที่เกี่ยวข้อง (Issues, Members, Custom Fields ฯลฯ) — ไม่สามารถกู้คืนได้
+        </p>
+        <DeleteConfirmButton
+          action={deleteProject.bind(null, id)}
+          label={`ลบ Project "${project.name}"`}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
+          iconClassName="h-4 w-4"
+        />
+      </div>
     </div>
   );
 }

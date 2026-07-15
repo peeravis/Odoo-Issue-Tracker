@@ -8,9 +8,10 @@ interface DeleteConfirmButtonProps {
   action: () => Promise<void>;
   className?: string;
   iconClassName?: string;
+  label?: string;
 }
 
-export function DeleteConfirmButton({ action, className, iconClassName = "h-4 w-4" }: DeleteConfirmButtonProps) {
+export function DeleteConfirmButton({ action, className, iconClassName = "h-4 w-4", label }: DeleteConfirmButtonProps) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -27,6 +28,7 @@ export function DeleteConfirmButton({ action, className, iconClassName = "h-4 w-
     <>
       <button type="button" onClick={() => setOpen(true)} className={className}>
         <Trash2 className={iconClassName} />
+        {label && <span>{label}</span>}
       </button>
 
       {open && (

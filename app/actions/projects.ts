@@ -207,3 +207,10 @@ export async function updateProjectGroup(projectId: string, formData: FormData) 
   revalidatePath(`/projects/${projectId}/settings`);
   redirect(`/projects/${projectId}/settings`);
 }
+
+export async function deleteProject(projectId: string) {
+  await requireAdmin();
+  await prisma.project.delete({ where: { id: projectId } });
+  revalidatePath("/projects");
+  redirect("/projects");
+}
