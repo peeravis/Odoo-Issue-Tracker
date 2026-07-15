@@ -28,6 +28,8 @@ interface SidebarProps {
   canManageUsers?: boolean;
   canAccessConfig?: boolean;
   canManageProjects?: boolean;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 export function Sidebar({
@@ -39,6 +41,7 @@ export function Sidebar({
   canManageMasterData = false,
   canManageUsers = false,
   canAccessConfig = false,
+  mobileOpen = false,
 }: SidebarProps) {
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
@@ -59,7 +62,11 @@ export function Sidebar({
   ];
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-gray-950 flex flex-col border-r border-white/5">
+    <aside className={cn(
+      "fixed inset-y-0 left-0 z-50 w-64 bg-gray-950 flex flex-col border-r border-white/5 transition-transform duration-200",
+      "md:translate-x-0",
+      mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+    )}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5">
         <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0 overflow-hidden">
