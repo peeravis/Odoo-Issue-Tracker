@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { getPermissions } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
 import { FadeUp } from "@/components/ui/motion";
 import { CheckCircle, XCircle, Download } from "lucide-react";
@@ -19,7 +20,9 @@ export default async function UsersPage({
   searchParams: Promise<SearchParams>;
 }) {
   const session = await getSession();
-  if (!session || session.role !== "admin") redirect("/dashboard");
+  if (!session) redirect("/login");
+  const perms = await getPermissions(session.role);
+  if (!perms.canManageUsers) redirect("/projects");
 
   const sp = await searchParams;
 

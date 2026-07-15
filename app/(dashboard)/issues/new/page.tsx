@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createIssue } from "@/app/actions/issues";
 import { ArrowLeft } from "lucide-react";
 import { ProjectSelector } from "@/components/issues/project-selector";
-import { canViewAllProjects } from "@/lib/utils";
+import { getPermissions } from "@/lib/permissions";
 import { StatusSolutionFields } from "@/components/issues/status-solution-fields";
 import { DescriptionWithAttachments } from "@/components/issues/description-with-attachments";
 
@@ -18,7 +18,8 @@ export default async function NewIssuePage({
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const canViewAll = canViewAllProjects(session.role);
+  const newIssuePerms = await getPermissions(session.role);
+  const canViewAll = newIssuePerms.canViewAllProjects;
 
   const userProjects = canViewAll
     ? await prisma.project.findMany({

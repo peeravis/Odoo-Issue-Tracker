@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { getPermissions } from "@/lib/permissions";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { PriorityBadge } from "@/components/issues/priority-badge";
@@ -17,7 +18,8 @@ export default async function DashboardPage({
 }) {
   const session = await getSession();
   if (!session) return null;
-  if (session.role !== "admin") redirect("/projects");
+  const perms = await getPermissions(session.role);
+  if (!perms.canAccessDashboard) redirect("/projects");
 
   const sp = await searchParams;
 

@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { getPermissions } from "@/lib/permissions";
 import { FolderKanban, Settings, ArrowLeft, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { FadeUp, StaggerList, StaggerItem } from "@/components/ui/motion";
@@ -20,7 +21,8 @@ export default async function ProjectsPage({
   const statusFilter = sp.status === "closed" ? "closed" : "active";
   const selectedGroupId = sp.groupId ?? null;
 
-  const isAdmin = session.role === "admin" || session.role === "pm";
+  const perms = await getPermissions(session.role);
+  const isAdmin = perms.canViewAllProjects;
 
   const allGroups = await prisma.projectGroup.findMany({
     orderBy: { sortOrder: "asc" },

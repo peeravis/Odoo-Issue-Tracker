@@ -1,11 +1,13 @@
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { getConfigs, CONFIG_DEFAULTS } from "@/lib/config";
-import { saveAppConfig, saveEmailConfig, saveIssueDefaults, uploadLogo, removeLogo } from "@/app/actions/config";
+import { saveAppConfig, saveEmailConfig, saveIssueDefaults, uploadLogo, removeLogo, saveRolePermissions, createRole, deleteRole } from "@/app/actions/config";
 import { TestEmailButton } from "@/components/config/test-email-button";
 import { FadeUp } from "@/components/ui/motion";
-import { Settings, Mail, Bug, Shield, CheckCircle, Upload, X } from "lucide-react";
+import { Settings, Mail, Bug, Shield, CheckCircle, Upload, X, Trash2, Plus } from "lucide-react";
 import Link from "next/link";
+import { getAllRoles, PERM_KEYS, PERM_LABELS } from "@/lib/permissions";
+import { getPermissions } from "@/lib/permissions";
 
 const TABS = [
   { key: "app", label: "App Settings", icon: Settings },
@@ -16,32 +18,24 @@ const TABS = [
 
 type Tab = typeof TABS[number]["key"];
 
-const ROLE_MATRIX = [
-  { feature: "เข้าถึง Dashboard", admin: true, pm: false, member: false, other: false },
-  { feature: "ดู Projects ทั้งหมด", admin: true, pm: true, member: false, other: false },
-  { feature: "สร้าง/แก้ไข Project", admin: true, pm: true, member: false, other: false },
-  { feature: "ดู Issues ทั้งหมด", admin: true, pm: true, member: false, other: false },
-  { feature: "สร้าง Issue", admin: true, pm: true, member: true, other: false },
-  { feature: "แก้ไข Issue", admin: true, pm: true, member: true, other: false },
-  { feature: "Export Issues", admin: true, pm: true, member: true, other: false },
-  { feature: "จัดการ Master Data", admin: true, pm: false, member: false, other: false },
-  { feature: "จัดการ Users", admin: true, pm: false, member: false, other: false },
-  { feature: "Config Settings", admin: true, pm: false, member: false, other: false },
-];
-
 export default async function ConfigPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string; saved?: string }>;
 }) {
   const session = await getSession();
-  if (!session || session.role !== "admin") redirect("/projects");
+  if (!session) redirect("/login");
+  const userPerms = await getPermissions(session.role);
+  if (!userPerms.canAccessConfig) redirect("/projects");
 
   const sp = await searchParams;
   const tab: Tab = (TABS.find((t) => t.key === sp.tab)?.key ?? "app") as Tab;
   const saved = sp.saved === "1";
 
-  const cfg = await getConfigs(Object.keys(CONFIG_DEFAULTS));
+  const [cfg, allRoles] = await Promise.all([
+    getConfigs(Object.keys(CONFIG_DEFAULTS)),
+    getAllRoles(),
+  ]);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -209,34 +203,111 @@ export default async function ConfigPage({
         )}
 
         {tab === "roles" && (
-          <Section title="Roles & Permissions" description="ภาพรวมสิทธิ์การใช้งานของแต่ละ role ในระบบ (read-only)">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Feature</th>
-                    {["admin", "pm", "member", "rnao / co / gl"].map((r) => (
-                      <th key={r} className="text-center py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{r}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
-                  {ROLE_MATRIX.map((row) => (
-                    <tr key={row.feature} className="hover:bg-gray-50 dark:hover:bg-gray-700/20">
-                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{row.feature}</td>
-                      <td className="py-3 px-3 text-center">{row.admin ? <Check /> : <Cross />}</td>
-                      <td className="py-3 px-3 text-center">{row.pm ? <Check /> : <Cross />}</td>
-                      <td className="py-3 px-3 text-center">{row.member ? <Check /> : <Cross />}</td>
-                      <td className="py-3 px-3 text-center">{row.other ? <Check /> : <Cross />}</td>
+          <Section title="Roles & Permissions" description="แก้ไขสิทธิ์การใช้งานของแต่ละ role และเพิ่ม role ใหม่">
+            <form action={saveRolePermissions}>
+              <input type="hidden" name="roleNames" value={allRoles.map((r) => r.name).join(",")} />
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide min-w-[160px]">สิทธิ์</th>
+                      {allRoles.map((role) => (
+                        <th key={role.name} className="text-center py-3 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide min-w-[90px]">
+                          <div className="flex flex-col items-center gap-1">
+                            {role.isSystem ? (
+                              <span className="font-bold text-gray-700 dark:text-gray-300">{role.name}</span>
+                            ) : (
+                              <input
+                                type="text"
+                                name={`label_${role.name}`}
+                                defaultValue={role.label}
+                                className="input-base w-20 text-center text-xs py-0.5 px-1"
+                              />
+                            )}
+                            {role.isSystem && (
+                              <input type="hidden" name={`label_${role.name}`} value={role.label} />
+                            )}
+                            {!role.isSystem && (
+                              <form action={deleteRole.bind(null, role.name)}>
+                                <button
+                                  type="submit"
+                                  className="text-red-400 hover:text-red-600 transition-colors"
+                                  title={`ลบ role ${role.name}`}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
+                    {PERM_KEYS.map((permKey) => (
+                      <tr key={permKey} className="hover:bg-gray-50 dark:hover:bg-gray-700/20">
+                        <td className="py-2.5 px-3 text-gray-700 dark:text-gray-300 text-xs">{PERM_LABELS[permKey]}</td>
+                        {allRoles.map((role) => (
+                          <td key={role.name} className="py-2.5 px-2 text-center">
+                            {role.name === "admin" ? (
+                              // Admin always has all permissions — show locked check
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold" title="Admin มีสิทธิ์นี้เสมอ">✓</span>
+                            ) : (
+                              <input
+                                type="checkbox"
+                                name={`perm_${role.name}_${permKey}`}
+                                defaultChecked={role.permissions[permKey]}
+                                className="h-4 w-4 rounded accent-indigo-600"
+                              />
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <button type="submit" className="btn-primary">บันทึก Permissions</button>
+                <p className="text-xs text-gray-400">Admin มีสิทธิ์ทุกอย่างเสมอ ไม่สามารถแก้ไขได้</p>
+              </div>
+            </form>
+
+            {/* Add new role */}
+            <div className="pt-5 border-t border-gray-100 dark:border-gray-700">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                เพิ่ม Role ใหม่
+              </h3>
+              <form action={createRole} className="flex gap-3 items-end">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Role Name (ตัวอักษรพิมพ์เล็ก ไม่มีช่องว่าง)</label>
+                  <input
+                    name="name"
+                    placeholder="เช่น vendor"
+                    required
+                    pattern="[a-z0-9_]+"
+                    title="ตัวอักษรพิมพ์เล็ก ตัวเลข หรือ _ เท่านั้น"
+                    className="input-base w-40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Label (ชื่อแสดงผล)</label>
+                  <input
+                    name="label"
+                    placeholder="เช่น Vendor"
+                    required
+                    className="input-base w-40"
+                  />
+                </div>
+                <button type="submit" className="btn-primary flex items-center gap-2">
+                  <Plus className="h-4 w-4" /> เพิ่ม Role
+                </button>
+              </form>
+              <p className="text-xs text-gray-400 mt-2">
+                Role ใหม่จะมีสิทธิ์ canCreateIssues, canEditIssues, canExportIssues เป็น default — แก้ไขได้ในตารางด้านบน
+              </p>
             </div>
-            <p className="text-xs text-gray-400 mt-4">
-              * rnao / co / gl สามารถดู Projects ทั้งหมดได้ แต่เข้าถึงผ่าน project member เท่านั้น
-              · Role เหล่านี้ไม่สามารถสร้างหรือแก้ไข issues ได้
-            </p>
           </Section>
         )}
       </FadeUp>
@@ -273,10 +344,3 @@ function SaveButton() {
   );
 }
 
-function Check() {
-  return <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold">✓</span>;
-}
-
-function Cross() {
-  return <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700/50 text-gray-300 dark:text-gray-600 text-xs font-bold">–</span>;
-}

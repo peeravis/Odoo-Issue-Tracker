@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { getPermissions } from "@/lib/permissions";
 import { Plus, Download } from "lucide-react";
 import { FadeUp } from "@/components/ui/motion";
 import { addDropdownMaster, deleteDropdownMaster } from "@/app/actions/master";
@@ -17,7 +18,9 @@ const TYPES = [
 
 export default async function MasterDataPage() {
   const session = await getSession();
-  if (!session || (session.role !== "admin" && session.role !== "pm")) redirect("/projects");
+  if (!session) redirect("/login");
+  const perms = await getPermissions(session.role);
+  if (!perms.canManageMasterData) redirect("/projects");
 
   const [items, clients, projectGroups] = await Promise.all([
     prisma.dropdownMaster.findMany({ where: { projectId: null }, orderBy: [{ type: "asc" }, { sortOrder: "asc" }] }),

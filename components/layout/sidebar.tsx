@@ -23,21 +23,23 @@ interface SidebarProps {
   userName: string;
   appName?: string;
   logoUrl?: string;
+  canAccessDashboard?: boolean;
+  canManageMasterData?: boolean;
+  canManageUsers?: boolean;
+  canAccessConfig?: boolean;
+  canManageProjects?: boolean;
 }
 
-const memberItems = [
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/issues", label: "Issues", icon: Bug },
-];
-
-const adminOnlyItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/master-data", label: "Master Data", icon: Database },
-  { href: "/users", label: "Users", icon: Users },
-  { href: "/config", label: "Config", icon: Settings2 },
-];
-
-export function Sidebar({ userRole, userName, appName = "Issue Tracker", logoUrl }: SidebarProps) {
+export function Sidebar({
+  userRole,
+  userName,
+  appName = "Issue Tracker",
+  logoUrl,
+  canAccessDashboard = false,
+  canManageMasterData = false,
+  canManageUsers = false,
+  canAccessConfig = false,
+}: SidebarProps) {
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
 
@@ -47,11 +49,14 @@ export function Sidebar({ userRole, userName, appName = "Issue Tracker", logoUrl
     });
   };
 
-  const isAdmin = userRole === "admin";
-
-  const allItems = isAdmin
-    ? [adminOnlyItems[0], ...memberItems, adminOnlyItems[1], adminOnlyItems[2], adminOnlyItems[3]]
-    : memberItems;
+  const allItems = [
+    ...(canAccessDashboard ? [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : []),
+    { href: "/projects", label: "Projects", icon: FolderKanban },
+    { href: "/issues", label: "Issues", icon: Bug },
+    ...(canManageMasterData ? [{ href: "/master-data", label: "Master Data", icon: Database }] : []),
+    ...(canManageUsers ? [{ href: "/users", label: "Users", icon: Users }] : []),
+    ...(canAccessConfig ? [{ href: "/config", label: "Config", icon: Settings2 }] : []),
+  ];
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-gray-950 flex flex-col border-r border-white/5">

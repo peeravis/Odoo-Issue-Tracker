@@ -6,7 +6,7 @@ import { IssueFilters } from "@/components/issues/issue-filters";
 import { FadeUp } from "@/components/ui/motion";
 import { Plus, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
-import { canViewAllProjects } from "@/lib/utils";
+import { getPermissions } from "@/lib/permissions";
 
 const PAGE_SIZE = 25;
 
@@ -36,7 +36,8 @@ export default async function IssuesPage({
   const session = await getSession();
   if (!session) return null;
 
-  const canViewAll = canViewAllProjects(session.role);
+  const perms = await getPermissions(session.role);
+  const canViewAll = perms.canViewAllProjects;
 
   // Determine accessible project IDs
   const userProjects = canViewAll

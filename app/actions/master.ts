@@ -3,10 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { getPermissions } from "@/lib/permissions";
 
 async function requireAdmin() {
   const session = await getSession();
-  if (!session || (session.role !== "admin" && session.role !== "pm")) throw new Error("Forbidden");
+  if (!session) throw new Error("Forbidden");
+  const perms = await getPermissions(session.role);
+  if (!perms.canManageMasterData) throw new Error("Forbidden");
 }
 
 export async function addDropdownMaster(type: string, label: string) {

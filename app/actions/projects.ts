@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import type { FieldType } from "@/lib/types";
+import { getPermissions } from "@/lib/permissions";
 
 async function requireSession() {
   const session = await getSession();
@@ -14,7 +15,8 @@ async function requireSession() {
 
 async function requireAdmin() {
   const session = await requireSession();
-  if (session.role !== "admin" && session.role !== "pm") throw new Error("Forbidden");
+  const perms = await getPermissions(session.role);
+  if (!perms.canManageProjects) throw new Error("Forbidden");
   return session;
 }
 

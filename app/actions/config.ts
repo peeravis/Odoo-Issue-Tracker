@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getConfigs } from "@/lib/config";
 import nodemailer from "nodemailer";
+import { PERM_KEYS } from "@/lib/permissions";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -138,4 +139,74 @@ export async function testEmailConnection(): Promise<{ ok: boolean; message: str
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : "เชื่อมต่อไม่สำเร็จ" };
   }
+}
+
+export async function saveRolePermissions(formData: FormData) {
+  await requireAdmin();
+  const roleNames = ((formData.get("roleNames") as string) || "").split(",").filter(Boolean);
+  const systemRoles = ["admin", "pm", "member", "rnao", "co", "gl"];
+  for (const roleName of roleNames) {
+    const label = (formData.get(`label_${roleName}`) as string) || roleName;
+    const permissions: Record<string, boolean> = {};
+    for (const key of PERM_KEYS) {
+      // admin always gets all perms
+      permissions[key] = roleName === "admin" ? true : formData.get(`perm_${roleName}_${key}`) === "on";
+    }
+    try {
+      await prisma.roleDefinition.upsert({
+        where: { name: roleName },
+        create: { name: roleName, label, permissions, isSystem: systemRoles.includes(roleName) },
+        update: { label, permissions },
+      });
+    } catch { /* ignore */ }
+  }
+  revalidatePath("/config");
+  redirect("/config?tab=roles&saved=1");
+}
+
+export async function createRole(formData: FormData) {
+  await requireAdmin();
+  const name = ((formData.get("name") as string) || "").trim().toLowerCase().replace(/\s+/g, "_");
+  const label = ((formData.get("label") as string) || "").trim();
+  if (!name || !label) redirect("/config?tab=roles");
+  let count = 0;
+  try {
+    count = await prisma.roleDefinition.count();
+  } catch { /* ignore */ }
+  try {
+    await prisma.roleDefinition.upsert({
+      where: { name },
+      create: {
+        name,
+        label,
+        isSystem: false,
+        sortOrder: 10 + count,
+        permissions: {
+          canAccessDashboard: false,
+          canViewAllProjects: false,
+          canManageProjects: false,
+          canCreateIssues: true,
+          canEditIssues: true,
+          canExportIssues: true,
+          canManageMasterData: false,
+          canManageUsers: false,
+          canAccessConfig: false,
+        },
+      },
+      update: {},
+    });
+  } catch { /* ignore */ }
+  revalidatePath("/config");
+  redirect("/config?tab=roles&saved=1");
+}
+
+export async function deleteRole(name: string) {
+  await requireAdmin();
+  const systemRoles = ["admin", "pm", "member", "rnao", "co", "gl"];
+  if (systemRoles.includes(name)) redirect("/config?tab=roles");
+  try {
+    await prisma.roleDefinition.delete({ where: { name } });
+  } catch { /* ignore */ }
+  revalidatePath("/config");
+  redirect("/config?tab=roles");
 }

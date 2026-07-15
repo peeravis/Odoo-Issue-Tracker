@@ -7,15 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum UserRole {
-  admin
-  pm
-  member
-  rnao
-  co
-  gl
-}
-
 enum ProjectStatus {
   active
   closed
@@ -52,7 +43,7 @@ model User {
   email       String   @unique
   name        String
   password    String
-  role        UserRole @default(member)
+  role        String   @default("member")
   extraRoles  String[] @default([])
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -232,6 +223,16 @@ model ActivityLog {
 
   issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id])
+}
+
+model RoleDefinition {
+  name        String   @id
+  label       String
+  isSystem    Boolean  @default(false)
+  permissions Json
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model SystemConfig {

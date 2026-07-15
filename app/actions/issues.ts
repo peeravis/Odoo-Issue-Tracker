@@ -6,7 +6,8 @@ import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { isMemberRole, canViewAllProjects, generateIssueCode } from "@/lib/utils";
+import { canViewAllProjects, generateIssueCode } from "@/lib/utils";
+import { getPermissions } from "@/lib/permissions";
 import { sendAssignmentEmail } from "@/lib/mailer";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
 
@@ -150,7 +151,8 @@ export async function updateIssue(issueId: string, formData: FormData) {
   const existing = await prisma.issue.findUnique({ where: { id: issueId } });
   if (!existing) throw new Error("Issue not found");
 
-  if (isMemberRole(session.role)) {
+  const perms = await getPermissions(session.role);
+  if (!perms.canViewAllProjects) {
     const membership = await prisma.projectMember.findUnique({
       where: { projectId_userId: { projectId: existing.projectId, userId: session.userId } },
     });
@@ -246,7 +248,8 @@ export async function addComment(issueId: string, formData: FormData) {
   const content = formData.get("content") as string;
   if (!content?.trim()) return;
 
-  if (isMemberRole(session.role)) {
+  const commentPerms = await getPermissions(session.role);
+  if (!commentPerms.canViewAllProjects) {
     const issue = await prisma.issue.findUnique({ where: { id: issueId }, select: { projectId: true } });
     if (!issue) throw new Error("Issue not found");
     const membership = await prisma.projectMember.findUnique({
@@ -274,7 +277,8 @@ export async function addComment(issueId: string, formData: FormData) {
 export async function updateIssueStatus(issueId: string, status: IssueStatus) {
   const session = await requireSession();
 
-  if (isMemberRole(session.role)) {
+  const statusPerms = await getPermissions(session.role);
+  if (!statusPerms.canViewAllProjects) {
     const issue = await prisma.issue.findUnique({ where: { id: issueId }, select: { projectId: true, status: true } });
     if (!issue) throw new Error("Not found");
     const membership = await prisma.projectMember.findUnique({
@@ -305,7 +309,8 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
 export async function resolveIssue(issueId: string, solution: string) {
   const session = await requireSession();
 
-  if (isMemberRole(session.role)) {
+  const resolvePerms = await getPermissions(session.role);
+  if (!resolvePerms.canViewAllProjects) {
     const issue = await prisma.issue.findUnique({ where: { id: issueId }, select: { projectId: true, status: true } });
     if (!issue) throw new Error("Not found");
     const membership = await prisma.projectMember.findUnique({
@@ -396,7 +401,8 @@ export async function updateIssueDueDate(issueId: string, dueDate: string | null
 export async function bulkUpdateStatus(issueIds: string[], status: IssueStatus) {
   const session = await requireSession();
 
-  if (isMemberRole(session.role)) {
+  const bulkPerms = await getPermissions(session.role);
+  if (!bulkPerms.canViewAllProjects) {
     const memberships = await prisma.projectMember.findMany({
       where: { userId: session.userId },
       select: { projectId: true },

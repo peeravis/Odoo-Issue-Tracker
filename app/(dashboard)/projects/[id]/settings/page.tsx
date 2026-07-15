@@ -2,6 +2,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { getPermissions } from "@/lib/permissions";
 import {
   upsertFieldDefinition,
   deleteFieldDefinition,
@@ -42,7 +43,9 @@ const PROJECT_ROLES = [
 export default async function ProjectSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getSession();
-  if (!session || (session.role !== "admin" && session.role !== "pm")) redirect("/projects");
+  if (!session) redirect("/login");
+  const perms = await getPermissions(session.role);
+  if (!perms.canManageProjects) redirect("/projects");
 
   const [project, allGroups] = await Promise.all([
     prisma.project.findUnique({

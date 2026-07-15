@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import type { UserRole } from "@/lib/types";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -17,7 +16,7 @@ export async function createUser(formData: FormData) {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const role = formData.get("role") as UserRole;
+  const role = formData.get("role") as string;
   const extraRoles = (formData.getAll("extraRoles") as string[]).filter(Boolean);
 
   const hashed = await bcrypt.hash(password, 12);
@@ -29,7 +28,7 @@ export async function createUser(formData: FormData) {
 export async function updateUser(userId: string, formData: FormData) {
   await requireAdmin();
   const name = formData.get("name") as string;
-  const role = formData.get("role") as UserRole;
+  const role = formData.get("role") as string;
   const isActive = formData.get("isActive") === "true";
   const extraRoles = (formData.getAll("extraRoles") as string[]).filter(Boolean);
 

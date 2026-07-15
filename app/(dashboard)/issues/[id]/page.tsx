@@ -2,13 +2,12 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { isMemberRole } from "@/lib/utils";
 import { PriorityBadge } from "@/components/issues/priority-badge";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { StatusDropdown } from "@/components/issues/status-dropdown";
 import { formatDate, formatDateTime, generateIssueCode } from "@/lib/utils";
 import { updateIssue, addComment, uploadAttachment, deleteAttachment, deleteComment } from "@/app/actions/issues";
-import { canViewAllProjects } from "@/lib/utils";
+import { getPermissions } from "@/lib/permissions";
 import { ArrowLeft, MessageSquare, Clock, Edit2, Check, Paperclip } from "lucide-react";
 import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 import { StatusSolutionFields } from "@/components/issues/status-solution-fields";
@@ -29,6 +28,8 @@ export default async function IssueDetailPage({
 
   const session = await getSession();
   if (!session) return null;
+
+  const issuePerms = await getPermissions(session.role);
 
   const issue = await prisma.issue.findUnique({
     where: { id },
@@ -58,8 +59,8 @@ export default async function IssueDetailPage({
 
   if (!issue) notFound();
 
-  // Member-level roles can only view issues from their assigned projects
-  if (isMemberRole(session.role)) {
+  // Roles without canViewAllProjects can only view issues from their assigned projects
+  if (!issuePerms.canViewAllProjects) {
     const membership = await prisma.projectMember.findUnique({
       where: { projectId_userId: { projectId: issue.projectId, userId: session.userId } },
     });
@@ -98,7 +99,7 @@ export default async function IssueDetailPage({
   const commentAction = addComment.bind(null, id);
   const uploadAction = uploadAttachment.bind(null, id);
   const deleteAttachmentAction = deleteAttachment.bind(null, id);
-  const canManage = canViewAllProjects(session.role);
+  const canManage = issuePerms.canViewAllProjects;
 
   return (
     <div className="max-w-5xl space-y-6">

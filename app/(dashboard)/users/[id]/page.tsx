@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
+import { getPermissions } from "@/lib/permissions";
 import Link from "next/link";
 import { ArrowLeft, Trash2, Plus, ShieldCheck } from "lucide-react";
 import { addUserToProject, removeUserFromProject, updateUser, resetPassword, deleteUser } from "@/app/actions/users";
@@ -9,7 +10,9 @@ import { DeleteUserButton } from "@/components/users/delete-user-button";
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getSession();
-  if (!session || session.role !== "admin") redirect("/dashboard");
+  if (!session) redirect("/login");
+  const perms = await getPermissions(session.role);
+  if (!perms.canManageUsers) redirect("/projects");
 
   const user = await prisma.user.findUnique({
     where: { id },
