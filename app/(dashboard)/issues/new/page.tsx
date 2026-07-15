@@ -128,16 +128,16 @@ export default async function NewIssuePage({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type</label>
             {masterIssueTypes.length ? (
-              <select name="issueType" required className="input-base w-full">
+              <select name="issueType" className="input-base w-full">
                 <option value="">-- Select --</option>
                 {masterIssueTypes.map((o) => (
                   <option key={o.id} value={o.label}>{o.label}</option>
                 ))}
               </select>
             ) : (
-              <input name="issueType" required placeholder="ระบุประเภท issue" className="input-base w-full" />
+              <input name="issueType" placeholder="ระบุประเภท issue" className="input-base w-full" />
             )}
           </div>
 
