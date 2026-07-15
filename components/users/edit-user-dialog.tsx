@@ -130,7 +130,7 @@ export function EditUserDialog({
             {/* Body */}
             <div className="overflow-y-auto flex-1">
               <form id="edit-user-form" action={handleSubmit} className="p-6 space-y-5">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อ <span className="text-red-500">*</span></label>
                     <input

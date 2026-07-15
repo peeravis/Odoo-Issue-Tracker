@@ -136,9 +136,9 @@ export default async function ConfigPage({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="SMTP Host" name="email.smtpHost" defaultValue={cfg["email.smtpHost"]} placeholder="smtp.gmail.com" />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Port" name="email.smtpPort" defaultValue={cfg["email.smtpPort"]} placeholder="587" />
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Secure (SSL)</label>
@@ -175,7 +175,7 @@ export default async function ConfigPage({
         {tab === "issues" && (
           <Section title="Issue Defaults" description="ค่า default ที่ใช้เมื่อสร้าง issue ใหม่">
             <form action={saveIssueDefaults} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Default Priority</label>
                   <select name="issue.defaultPriority" defaultValue={cfg["issue.defaultPriority"]} className="input-base w-full">

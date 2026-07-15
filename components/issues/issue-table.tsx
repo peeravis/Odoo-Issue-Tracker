@@ -160,6 +160,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: Issu
       </AnimatePresence>
 
       <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 dark:border-gray-700/60 bg-gray-50/80 dark:bg-gray-900/40">
@@ -302,6 +303,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: Issu
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

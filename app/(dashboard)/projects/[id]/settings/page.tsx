@@ -111,7 +111,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
       {/* General Info */}
       <Section title="General">
         <form action={updateProjectAction} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
               <input
@@ -340,7 +340,7 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
           ))}
         </div>
 
-        <form action={upsertFieldAction} className="grid grid-cols-2 gap-3">
+        <form action={upsertFieldAction} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Field Key (slug)</label>
             <input name="fieldKey" placeholder="e.g. client_po_number" required className="input-base w-full" />
