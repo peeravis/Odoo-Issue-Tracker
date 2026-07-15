@@ -81,11 +81,12 @@ export function DescriptionWithAttachments({ defaultDescription = "" }: Descript
         {/* Description textarea */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Issue Description
+            Issue Description <span className="text-red-500">*</span>
           </label>
           <textarea
             name="description"
             rows={4}
+            required
             defaultValue={defaultDescription}
             className="input-base w-full"
             placeholder="รายละเอียดของ issue..."

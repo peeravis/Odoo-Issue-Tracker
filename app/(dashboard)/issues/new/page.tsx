@@ -104,8 +104,8 @@ export default async function NewIssuePage({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client</label>
-            <select name="clientId" className="input-base w-full">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client <span className="text-red-500">*</span></label>
+            <select name="clientId" required className="input-base w-full">
               <option value="">-- Select Client --</option>
               {allClients.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -114,44 +114,44 @@ export default async function NewIssuePage({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หน่วยงาน</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หน่วยงาน <span className="text-red-500">*</span></label>
             {masterDepartments.length ? (
-              <select name="department" className="input-base w-full">
+              <select name="department" required className="input-base w-full">
                 <option value="">-- Select --</option>
                 {masterDepartments.map((o) => (
                   <option key={o.id} value={o.label}>{o.label}</option>
                 ))}
               </select>
             ) : (
-              <input name="department" placeholder="ระบุหน่วยงาน" className="input-base w-full" />
+              <input name="department" required placeholder="ระบุหน่วยงาน" className="input-base w-full" />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type <span className="text-red-500">*</span></label>
             {masterIssueTypes.length ? (
-              <select name="issueType" className="input-base w-full">
+              <select name="issueType" required className="input-base w-full">
                 <option value="">-- Select --</option>
                 {masterIssueTypes.map((o) => (
                   <option key={o.id} value={o.label}>{o.label}</option>
                 ))}
               </select>
             ) : (
-              <input name="issueType" placeholder="ระบุประเภท issue" className="input-base w-full" />
+              <input name="issueType" required placeholder="ระบุประเภท issue" className="input-base w-full" />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Module</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Module <span className="text-red-500">*</span></label>
             {masterModules.length ? (
-              <select name="module" className="input-base w-full">
+              <select name="module" required className="input-base w-full">
                 <option value="">-- Select --</option>
                 {masterModules.map((o) => (
                   <option key={o.id} value={o.label}>{o.label}</option>
                 ))}
               </select>
             ) : (
-              <input name="module" placeholder="ระบุ module" className="input-base w-full" />
+              <input name="module" required placeholder="ระบุ module" className="input-base w-full" />
             )}
           </div>
 
@@ -173,8 +173,8 @@ export default async function NewIssuePage({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
-            <select name="assigneeId" className="input-base w-full">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To <span className="text-red-500">*</span></label>
+            <select name="assigneeId" required className="input-base w-full">
               <option value="">-- Unassigned --</option>
               {assigneeUsers.map((u) => {
                 const role = u.extraRoles.includes("aspd") ? "ASPD" : "Vendor";
@@ -189,8 +189,8 @@ export default async function NewIssuePage({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
-            <input type="date" name="dueDate" className="input-base w-full" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date <span className="text-red-500">*</span></label>
+            <input type="date" name="dueDate" required className="input-base w-full" />
           </div>
         </div>
 
