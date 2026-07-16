@@ -38,7 +38,7 @@ export function StatusDropdown({ issueId, status }: { issueId: string; status: I
     setOpen(false);
     if (s === current) return;
 
-    if (s === "resolved") {
+    if (s === "wait_for_user_check") {
       setSolution("");
       setSolutionModal(true);
       return;
@@ -59,7 +59,7 @@ export function StatusDropdown({ issueId, status }: { issueId: string; status: I
     if (!solution.trim()) return;
     setSolutionModal(false);
     const prev = current;
-    setCurrent("resolved");
+    setCurrent("wait_for_user_check");
     startTransition(async () => {
       try {
         await resolveIssue(issueId, solution.trim());
@@ -126,7 +126,7 @@ export function StatusDropdown({ issueId, status }: { issueId: string; status: I
                   className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md"
                 >
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">ระบุ Solution</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">กรุณากรอก Solution ก่อนเปลี่ยน Status เป็น Resolved</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">กรุณากรอก Solution ก่อนเปลี่ยน Status เป็น Wait for User Check</p>
                   <textarea
                     autoFocus
                     rows={4}
@@ -149,7 +149,7 @@ export function StatusDropdown({ issueId, status }: { issueId: string; status: I
                       disabled={!solution.trim()}
                       className="btn-primary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Resolve Issue
+                      ยืนยัน
                     </button>
                   </div>
                 </motion.div>

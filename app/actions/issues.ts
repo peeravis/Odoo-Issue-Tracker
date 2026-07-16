@@ -325,7 +325,7 @@ export async function resolveIssue(issueId: string, solution: string) {
   await prisma.issue.update({
     where: { id: issueId },
     data: {
-      status: "resolved",
+      status: "wait_for_user_check",
       solution,
       modifiedById: session.userId,
       lastModifiedAt: new Date(),
@@ -334,7 +334,7 @@ export async function resolveIssue(issueId: string, solution: string) {
   });
 
   await prisma.activityLog.create({
-    data: { issueId, userId: session.userId, action: "status_changed", oldValue: existing.status, newValue: "resolved" },
+    data: { issueId, userId: session.userId, action: "status_changed", oldValue: existing.status, newValue: "wait_for_user_check" },
   });
 
   revalidatePath("/issues");
