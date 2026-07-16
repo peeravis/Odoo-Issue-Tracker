@@ -447,8 +447,8 @@ export default async function IssueDetailPage({
             <DetailRow label="Issue Type" value={issue.issueType} href={issue.issueType ? `/issues?issueType=${encodeURIComponent(issue.issueType)}` : undefined} />
             <DetailRow label="Module" value={issue.module} href={issue.module ? `/issues?module=${encodeURIComponent(issue.module)}` : undefined} />
             <AssigneeRow name={issue.assignee?.name} extraRoles={issue.assignee?.extraRoles} href={issue.assigneeId ? `/issues?assigneeId=${issue.assigneeId}` : undefined} />
-            <DetailRow label="Logged By" value={issue.loggedBy?.name} />
-            <DetailRow label="Created By" value={issue.createdBy.name} />
+            <DetailRow label="Logged By" value={issue.loggedBy?.email} />
+            <DetailRow label="Created By" value={issue.createdBy.email} />
             <DetailRow label="Modified By" value={issue.modifiedBy?.name} />
             <DetailRow label="Date Reported" value={formatDate(issue.dateReported)} />
             <DetailRow
