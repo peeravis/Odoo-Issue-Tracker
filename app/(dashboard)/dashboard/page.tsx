@@ -10,6 +10,7 @@ import { AlertCircle, Clock, CheckCircle, XCircle, Bug, BarChart3, AlertTriangle
 import Link from "next/link";
 import { formatDate, generateIssueCode } from "@/lib/utils";
 import { ProjectFilter } from "@/components/dashboard/project-filter";
+import { ReportExport } from "@/components/dashboard/report-export";
 
 export default async function DashboardPage({
   searchParams,
@@ -373,6 +374,11 @@ export default async function DashboardPage({
           </div>
         </FadeUp>
       )}
+
+      {/* Report Export */}
+      <FadeUp delay={0.16}>
+        <ReportExport projectId={sp.projectId} />
+      </FadeUp>
 
       {/* Recent Issues */}
       <FadeUp delay={0.15}>
