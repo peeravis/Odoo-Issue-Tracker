@@ -8,6 +8,7 @@ import { ProjectSelector } from "@/components/issues/project-selector";
 import { getPermissions } from "@/lib/permissions";
 import { StatusSolutionFields } from "@/components/issues/status-solution-fields";
 import { DescriptionWithAttachments } from "@/components/issues/description-with-attachments";
+import { getDropdowns, getAssigneeUsers } from "@/lib/db/dropdowns";
 
 export default async function NewIssuePage({
   searchParams,
@@ -40,20 +41,6 @@ export default async function NewIssuePage({
 
   const selectedProjectId = sp.projectId ?? userProjects[0]?.id ?? "";
 
-  async function getDropdowns(type: string, projectId: string) {
-    if (projectId) {
-      const projectSpecific = await prisma.dropdownMaster.findMany({
-        where: { type, projectId },
-        orderBy: { sortOrder: "asc" },
-      });
-      if (projectSpecific.length > 0) return projectSpecific;
-    }
-    return prisma.dropdownMaster.findMany({
-      where: { type, projectId: null },
-      orderBy: { sortOrder: "asc" },
-    });
-  }
-
   const [projectData, assigneeUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
     selectedProjectId
       ? prisma.project.findUnique({
@@ -61,11 +48,7 @@ export default async function NewIssuePage({
           include: { fieldDefs: { orderBy: { sortOrder: "asc" } } },
         })
       : Promise.resolve(null),
-    prisma.user.findMany({
-      where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
-      select: { id: true, name: true, extraRoles: true },
-      orderBy: { name: "asc" },
-    }),
+    getAssigneeUsers(),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     getDropdowns("issueType", selectedProjectId),
     getDropdowns("module", selectedProjectId),

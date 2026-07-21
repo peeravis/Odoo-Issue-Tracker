@@ -15,6 +15,7 @@ import { ToastHandler } from "@/components/ui/toast-handler";
 import { AttachmentList } from "@/components/issues/attachment-list";
 import { Markdown } from "@/components/ui/markdown";
 import { DescriptionWithAttachments } from "@/components/issues/description-with-attachments";
+import { getDropdowns, getAssigneeUsers } from "@/lib/db/dropdowns";
 
 export default async function IssueDetailPage({
   params,
@@ -67,24 +68,8 @@ export default async function IssueDetailPage({
     if (!membership) notFound();
   }
 
-  async function getDropdowns(type: string, projectId: string) {
-    const projectSpecific = await prisma.dropdownMaster.findMany({
-      where: { type, projectId },
-      orderBy: { sortOrder: "asc" },
-    });
-    if (projectSpecific.length > 0) return projectSpecific;
-    return prisma.dropdownMaster.findMany({
-      where: { type, projectId: null },
-      orderBy: { sortOrder: "asc" },
-    });
-  }
-
   const [allUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
-    prisma.user.findMany({
-      where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
-      select: { id: true, name: true, extraRoles: true },
-      orderBy: { name: "asc" },
-    }),
+    getAssigneeUsers(),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     getDropdowns("issueType", issue.projectId),
     getDropdowns("module", issue.projectId),

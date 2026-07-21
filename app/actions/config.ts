@@ -9,8 +9,7 @@ import { getSession } from "@/lib/session";
 import { getConfigs } from "@/lib/config";
 import nodemailer from "nodemailer";
 import { PERM_KEYS } from "@/lib/permissions";
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+import { UPLOAD_DIR, ALLOWED_IMAGE_TYPES, MAX_LOGO_SIZE } from "@/lib/constants";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -46,9 +45,8 @@ export async function uploadLogo(formData: FormData) {
   const file = formData.get("logo") as File | null;
   if (!file || file.size === 0) redirect("/config?tab=app");
 
-  const allowed = ["image/png", "image/jpeg", "image/svg+xml", "image/webp", "image/gif"];
-  if (!allowed.includes(file.type)) redirect("/config?tab=app&error=type");
-  if (file.size > 2 * 1024 * 1024) redirect("/config?tab=app&error=size");
+  if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type)) redirect("/config?tab=app&error=type");
+  if (file.size > MAX_LOGO_SIZE) redirect("/config?tab=app&error=size");
 
   await mkdir(UPLOAD_DIR, { recursive: true });
   const ext = path.extname(file.name) || ".png";

@@ -10,9 +10,7 @@ import { canViewAllProjects, generateIssueCode } from "@/lib/utils";
 import { getPermissions } from "@/lib/permissions";
 import { sendAssignmentEmail } from "@/lib/mailer";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+import { UPLOAD_DIR, MAX_FILE_SIZE } from "@/lib/constants";
 
 async function requireSession() {
   const session = await getSession();
@@ -343,8 +341,16 @@ export async function resolveIssue(issueId: string, solution: string) {
 
 export async function updateIssuePriority(issueId: string, priority: IssuePriority) {
   const session = await requireSession();
-  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { priority: true } });
+  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { priority: true, projectId: true } });
   if (!existing) throw new Error("Not found");
+
+  const perms = await getPermissions(session.role);
+  if (!perms.canViewAllProjects) {
+    const membership = await prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: existing.projectId, userId: session.userId } },
+    });
+    if (!membership) throw new Error("Unauthorized");
+  }
   await prisma.issue.update({
     where: { id: issueId },
     data: { priority, modifiedById: session.userId, lastModifiedAt: new Date() },
@@ -358,8 +364,16 @@ export async function updateIssuePriority(issueId: string, priority: IssuePriori
 
 export async function updateIssueAssignee(issueId: string, assigneeId: string | null) {
   const session = await requireSession();
-  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { assigneeId: true } });
+  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { assigneeId: true, projectId: true } });
   if (!existing) throw new Error("Not found");
+
+  const perms = await getPermissions(session.role);
+  if (!perms.canViewAllProjects) {
+    const membership = await prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: existing.projectId, userId: session.userId } },
+    });
+    if (!membership) throw new Error("Unauthorized");
+  }
 
   const [oldAssignee, newAssignee] = await Promise.all([
     existing.assigneeId ? prisma.user.findUnique({ where: { id: existing.assigneeId }, select: { name: true } }) : null,
@@ -379,8 +393,16 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
 
 export async function updateIssueDueDate(issueId: string, dueDate: string | null) {
   const session = await requireSession();
-  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { dueDate: true } });
+  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { dueDate: true, projectId: true } });
   if (!existing) throw new Error("Not found");
+
+  const perms = await getPermissions(session.role);
+  if (!perms.canViewAllProjects) {
+    const membership = await prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: existing.projectId, userId: session.userId } },
+    });
+    if (!membership) throw new Error("Unauthorized");
+  }
   await prisma.issue.update({
     where: { id: issueId },
     data: { dueDate: dueDate ? new Date(dueDate) : null, modifiedById: session.userId, lastModifiedAt: new Date() },

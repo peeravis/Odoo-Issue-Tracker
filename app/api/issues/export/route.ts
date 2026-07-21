@@ -5,6 +5,7 @@ import { decrypt } from "@/lib/session";
 import { generateIssueCode, PRIORITY_LABELS, STATUS_LABELS, canViewAllProjects } from "@/lib/utils";
 import { format } from "date-fns";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
+import { buildIssueWhere } from "@/lib/db/issue-filters";
 
 export async function GET(request: NextRequest) {
   // Auth check
@@ -23,36 +24,22 @@ export async function GET(request: NextRequest) {
         .then((m) => m.map((x) => ({ id: x.projectId })));
 
   const projectIds = userProjects.map((p) => p.id);
-
-  const where: Record<string, unknown> = {
-    projectId: projectId
-      ? projectIds.includes(projectId)
-        ? projectId
-        : { in: projectIds }
-      : { in: projectIds },
-  };
-
-  if (sp.get("clientId")) where.clientId = sp.get("clientId");
-  if (sp.get("department")) where.department = sp.get("department");
-  if (sp.get("issueType")) where.issueType = sp.get("issueType");
-  if (sp.get("module")) where.module = sp.get("module");
-  if (sp.get("priority")) where.priority = sp.get("priority") as IssuePriority;
-  if (sp.get("status")) where.status = sp.get("status") as IssueStatus;
-  if (sp.get("assigneeId")) where.assigneeId = sp.get("assigneeId");
-  if (sp.get("search")) {
-    where.OR = [
-      { title: { contains: sp.get("search"), mode: "insensitive" } },
-      { solution: { contains: sp.get("search"), mode: "insensitive" } },
-    ];
-  }
-  const fromDate = sp.get("from");
-  const toDate = sp.get("to");
-  if (fromDate || toDate) {
-    where.createdAt = {
-      ...(fromDate ? { gte: new Date(fromDate) } : {}),
-      ...(toDate ? { lte: new Date(toDate + "T23:59:59") } : {}),
-    };
-  }
+  const where = buildIssueWhere(
+    {
+      projectId:  sp.get("projectId"),
+      clientId:   sp.get("clientId"),
+      department: sp.get("department"),
+      issueType:  sp.get("issueType"),
+      module:     sp.get("module"),
+      priority:   sp.get("priority"),
+      status:     sp.get("status"),
+      assigneeId: sp.get("assigneeId"),
+      search:     sp.get("search"),
+      from:       sp.get("from"),
+      to:         sp.get("to"),
+    },
+    projectIds
+  );
 
   const issues = await prisma.issue.findMany({
     where,

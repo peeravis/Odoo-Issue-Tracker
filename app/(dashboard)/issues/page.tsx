@@ -5,10 +5,10 @@ import { IssueTable } from "@/components/issues/issue-table";
 import { IssueFilters } from "@/components/issues/issue-filters";
 import { FadeUp } from "@/components/ui/motion";
 import { Plus, Download, ChevronLeft, ChevronRight } from "lucide-react";
-import type { IssuePriority, IssueStatus } from "@/lib/types";
 import { getPermissions } from "@/lib/permissions";
-
-const PAGE_SIZE = 25;
+import { PAGE_SIZE } from "@/lib/constants";
+import { buildIssueWhere } from "@/lib/db/issue-filters";
+import { getAssigneeUsers } from "@/lib/db/dropdowns";
 
 interface SearchParams {
   projectId?: string;
@@ -47,46 +47,7 @@ export default async function IssuesPage({
         .then((m) => m.map((x) => x.project));
 
   const projectIds = userProjects.map((p) => p.id);
-
-  const where: Record<string, unknown> = {
-    projectId: sp.projectId
-      ? (projectIds.includes(sp.projectId) ? sp.projectId : { in: projectIds })
-      : { in: projectIds },
-  };
-
-  if (sp.clientId) where.clientId = sp.clientId;
-  if (sp.department) where.department = sp.department;
-  if (sp.issueType) where.issueType = sp.issueType;
-  if (sp.module) where.module = sp.module;
-  if (sp.priority) where.priority = sp.priority as IssuePriority;
-  if (sp.status) where.status = sp.status as IssueStatus;
-  if (sp.assigneeId) where.assigneeId = sp.assigneeId;
-  if (sp.search) {
-    where.OR = [
-      { title: { contains: sp.search, mode: "insensitive" } },
-      { solution: { contains: sp.search, mode: "insensitive" } },
-    ];
-  }
-  if (sp.from || sp.to) {
-    where.createdAt = {
-      ...(sp.from ? { gte: new Date(sp.from) } : {}),
-      ...(sp.to ? { lte: new Date(sp.to + "T23:59:59") } : {}),
-    };
-  }
-
-  if (sp.duePreset === "overdue") {
-    where.dueDate = { lt: new Date() };
-    if (!sp.status) where.status = { notIn: ["resolved", "closed"] };
-  } else if (sp.duePreset === "today") {
-    const start = new Date(); start.setHours(0, 0, 0, 0);
-    const end = new Date(); end.setHours(23, 59, 59, 999);
-    where.dueDate = { gte: start, lte: end };
-  } else if (sp.duePreset === "week") {
-    const end = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    where.dueDate = { lte: end, not: null };
-    if (!sp.status) where.status = { notIn: ["resolved", "closed"] };
-  }
-
+  const where = buildIssueWhere(sp, projectIds);
   const page = Math.max(1, parseInt(sp.page ?? "1"));
 
   const [totalCount, issues, allUsers, allClients, distinctModules, distinctIssueTypes, distinctDepartments] = await Promise.all([
@@ -106,7 +67,7 @@ export default async function IssuesPage({
         createdBy: { select: { name: true } },
       },
     }),
-    prisma.user.findMany({ where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } }, select: { id: true, name: true, extraRoles: true }, orderBy: { name: "asc" } }),
+    getAssigneeUsers(),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.issue.findMany({ where: { projectId: { in: projectIds }, module: { not: null } }, select: { module: true }, distinct: ["module"], orderBy: { module: "asc" } }),
     prisma.issue.findMany({ where: { projectId: { in: projectIds }, issueType: { not: null } }, select: { issueType: true }, distinct: ["issueType"], orderBy: { issueType: "asc" } }),
