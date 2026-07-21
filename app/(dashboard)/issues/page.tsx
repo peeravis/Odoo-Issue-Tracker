@@ -106,7 +106,7 @@ export default async function IssuesPage({
         createdBy: { select: { name: true } },
       },
     }),
-    prisma.user.findMany({ where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.user.findMany({ where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } }, select: { id: true, name: true, extraRoles: true }, orderBy: { name: "asc" } }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.issue.findMany({ where: { projectId: { in: projectIds }, module: { not: null } }, select: { module: true }, distinct: ["module"], orderBy: { module: "asc" } }),
     prisma.issue.findMany({ where: { projectId: { in: projectIds }, issueType: { not: null } }, select: { issueType: true }, distinct: ["issueType"], orderBy: { issueType: "asc" } }),

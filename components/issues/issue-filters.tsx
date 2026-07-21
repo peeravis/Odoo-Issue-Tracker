@@ -6,7 +6,7 @@ import { Filter, User, AlertTriangle, Clock, CalendarDays } from "lucide-react";
 import { STATUS_LABELS } from "@/lib/utils";
 
 interface Project { id: string; name: string }
-interface UserItem { id: string; name: string }
+interface UserItem { id: string; name: string; extraRoles?: string[] }
 interface Client { id: string; name: string }
 
 interface IssueFiltersProps {
@@ -185,7 +185,10 @@ export function IssueFilters({ projects, users, clients, modules, issueTypes, de
               className="input-base w-full"
             >
               <option value="">All</option>
-              {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              {users.map((u) => {
+                const suffix = u.extraRoles?.includes("aspd") ? " (ASPD)" : u.extraRoles?.includes("vendor") ? " (Vendor)" : "";
+                return <option key={u.id} value={u.id}>{u.name}{suffix}</option>;
+              })}
             </select>
           </div>
 

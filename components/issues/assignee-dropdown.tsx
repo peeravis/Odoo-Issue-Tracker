@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { updateIssueAssignee } from "@/app/actions/issues";
 import { UserCircle, X } from "lucide-react";
 
-type User = { id: string; name: string };
+type User = { id: string; name: string; extraRoles?: string[] };
 
 export function AssigneeDropdown({
   issueId,
@@ -129,8 +129,12 @@ export function AssigneeDropdown({
                     <span className="h-5 w-5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold flex-shrink-0">
                       {u.name.charAt(0).toUpperCase()}
                     </span>
-                    {u.name}
-                    {u.id === currentId && <span className="ml-auto text-indigo-500">✓</span>}
+                    <span className="flex-1 truncate">
+                      {u.name}
+                      {u.extraRoles?.includes("aspd") && <span className="ml-1 text-indigo-400">(ASPD)</span>}
+                      {!u.extraRoles?.includes("aspd") && u.extraRoles?.includes("vendor") && <span className="ml-1 text-amber-500">(Vendor)</span>}
+                    </span>
+                    {u.id === currentId && <span className="text-indigo-500">✓</span>}
                   </button>
                 ))}
                 {filtered.length === 0 && (
