@@ -55,7 +55,7 @@ export async function uploadLogo(formData: FormData) {
   const fileName = `logo${ext}`;
   await writeFile(path.join(UPLOAD_DIR, fileName), Buffer.from(await file.arrayBuffer()));
 
-  await upsertMany({ "app.logoUrl": `/api/uploads/${fileName}` });
+  await upsertMany({ "app.logoUrl": `/api/uploads/${fileName}?v=${Date.now()}` });
   revalidatePath("/config");
   revalidatePath("/", "layout");
   redirect("/config?tab=app&saved=1");

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { getConfigs } from "@/lib/config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,10 +14,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Issue Tracker",
-  description: "Project Implementation Issue Tracker",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const cfg = await getConfigs(["app.name", "app.logoUrl"]);
+  const appName = cfg["app.name"] || "Issue Tracker";
+  const logoUrl = cfg["app.logoUrl"];
+  return {
+    title: appName,
+    description: "Project Implementation Issue Tracker",
+    ...(logoUrl && { icons: { icon: logoUrl } }),
+  };
+}
 
 export default function RootLayout({
   children,
