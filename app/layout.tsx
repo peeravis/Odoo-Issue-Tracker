@@ -15,26 +15,29 @@ const geistMono = Geist_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const cfg = await getConfigs(["app.name", "app.logoUrl"]);
-  const appName = cfg["app.name"] || "Issue Tracker";
-  const logoUrl = cfg["app.logoUrl"];
+  const cfg = await getConfigs(["app.name"]);
   return {
-    title: appName,
+    title: cfg["app.name"] || "Issue Tracker",
     description: "Project Implementation Issue Tracker",
-    ...(logoUrl && { icons: { icon: logoUrl } }),
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cfg = await getConfigs(["app.logoUrl"]);
+  const logoUrl = cfg["app.logoUrl"];
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {logoUrl && <link rel="icon" href={logoUrl} key="favicon" />}
+      </head>
       <body className="min-h-full flex flex-col">
         {children}
         <Toaster position="top-right" richColors closeButton />
