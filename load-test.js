@@ -3,9 +3,9 @@ import { check, sleep } from "k6";
 
 export const options = {
   stages: [
-    { duration: "30s", target: 30 },  // warm up
-    { duration: "1m",  target: 100 }, // target: 100 concurrent users
-    { duration: "30s", target: 100 }, // hold
+    { duration: "30s", target: 50 },  // warm up
+    { duration: "1m",  target: 200 }, // target: 200 concurrent users
+    { duration: "30s", target: 200 }, // hold
     { duration: "30s", target: 0 },   // ramp down
   ],
   thresholds: {
