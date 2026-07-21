@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "postbuild": "mkdir -p .next/standalone/Odoo-Issue-Tracker/.next && echo 'process.chdir(__dirname + \"/Odoo-Issue-Tracker\");' > .next/standalone/server.js && echo 'require(\"./Odoo-Issue-Tracker/server.js\");' >> .next/standalone/server.js && cp -r .next/static .next/standalone/Odoo-Issue-Tracker/.next/static",
+    "postbuild": "mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public",
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
