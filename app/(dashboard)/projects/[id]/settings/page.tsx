@@ -19,6 +19,7 @@ import {
 import { ArrowLeft, Plus } from "lucide-react";
 import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/utils";
+import { MemberSearch } from "@/components/projects/member-search";
 
 const DROPDOWN_TYPES = [
   { key: "issueType", label: "Issue Type" },
@@ -183,22 +184,11 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
             );
           })}
         </div>
-        <form action={addMemberAction} className="flex gap-2">
-          <select name="userId" className="input-base flex-1">
-            <option value="">-- เพิ่ม member --</option>
-            {allUsers.filter((u) => !memberIds.has(u.id)).map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name} ({u.email})
-              </option>
-            ))}
-          </select>
-          <select name="projectRole" className="input-base" defaultValue="developer">
-            {PROJECT_ROLES.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </select>
-          <button type="submit" className="btn-primary">Add</button>
-        </form>
+        <MemberSearch
+          users={allUsers.filter((u) => !memberIds.has(u.id)).map((u) => ({ id: u.id, name: u.name, email: u.email }))}
+          roles={PROJECT_ROLES}
+          addAction={addMemberAction}
+        />
       </Section>
 
       {/* Clients */}
