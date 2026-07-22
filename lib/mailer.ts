@@ -96,24 +96,39 @@ function row(label: string, value: string) {
     </tr>`;
 }
 
-export async function sendAssignmentEmail(payload: AssignmentEmailPayload) {
+async function createMailer(): Promise<{ transporter: ReturnType<typeof nodemailer.createTransport>; cfg: Record<string, string> } | null> {
   const cfg = await getConfigs([
     "email.enabled", "email.smtpHost", "email.smtpPort",
     "email.smtpSecure", "email.smtpUser", "email.smtpPass",
     "email.fromName", "email.fromEmail",
   ]);
-
-  if (cfg["email.enabled"] !== "true") return;
-  if (!cfg["email.smtpHost"]) return;
-
+  if (cfg["email.enabled"] !== "true") {
+    console.warn("[mailer] skipped — email.enabled is not 'true'");
+    return null;
+  }
+  if (!cfg["email.smtpHost"]) {
+    console.warn("[mailer] skipped — email.smtpHost is not configured (set SMTP_HOST env or configure via Config page)");
+    return null;
+  }
   const transporter = nodemailer.createTransport({
     host: cfg["email.smtpHost"],
     port: Number(cfg["email.smtpPort"] || 587),
     secure: cfg["email.smtpSecure"] === "true",
-    auth: cfg["email.smtpUser"]
-      ? { user: cfg["email.smtpUser"], pass: cfg["email.smtpPass"] }
-      : undefined,
+    auth: cfg["email.smtpUser"] ? { user: cfg["email.smtpUser"], pass: cfg["email.smtpPass"] } : undefined,
   });
+  return { transporter, cfg };
+}
+
+async function bccExcluding(...emails: (string | undefined | null)[]): Promise<string | undefined> {
+  const exclude = emails.filter(Boolean) as string[];
+  const list = await getGroupBcc(exclude);
+  return list.length ? list.join(",") : undefined;
+}
+
+export async function sendAssignmentEmail(payload: AssignmentEmailPayload) {
+  const mailer = await createMailer();
+  if (!mailer) return;
+  const { transporter, cfg } = mailer;
 
   const priorityLabel = PRIORITY_LABELS[payload.priority as keyof typeof PRIORITY_LABELS] ?? payload.priority;
   const statusLabel   = STATUS_LABELS[payload.status as keyof typeof STATUS_LABELS] ?? payload.status;
@@ -167,34 +182,19 @@ export async function sendAssignmentEmail(payload: AssignmentEmailPayload) {
     </div>
   `;
 
-  const bcc = await getGroupBcc([payload.to]);
   await transporter.sendMail({
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to: payload.to,
-    bcc: bcc.join(","),
+    bcc: await bccExcluding(payload.to),
     subject: `[${payload.issueCode}] You have been assigned — ${payload.issueTitle}`,
     html,
   });
 }
 
 export async function sendWaitForCheckEmail(payload: WaitForCheckEmailPayload) {
-  const cfg = await getConfigs([
-    "email.enabled", "email.smtpHost", "email.smtpPort",
-    "email.smtpSecure", "email.smtpUser", "email.smtpPass",
-    "email.fromName", "email.fromEmail",
-  ]);
-
-  if (cfg["email.enabled"] !== "true") return;
-  if (!cfg["email.smtpHost"]) return;
-
-  const transporter = nodemailer.createTransport({
-    host: cfg["email.smtpHost"],
-    port: Number(cfg["email.smtpPort"] || 587),
-    secure: cfg["email.smtpSecure"] === "true",
-    auth: cfg["email.smtpUser"]
-      ? { user: cfg["email.smtpUser"], pass: cfg["email.smtpPass"] }
-      : undefined,
-  });
+  const mailer = await createMailer();
+  if (!mailer) return;
+  const { transporter, cfg } = mailer;
 
   const priorityLabel = PRIORITY_LABELS[payload.priority as keyof typeof PRIORITY_LABELS] ?? payload.priority;
   const priorityColor = PRIORITY_COLOR[payload.priority] ?? "#6b7280";
@@ -252,34 +252,19 @@ export async function sendWaitForCheckEmail(payload: WaitForCheckEmailPayload) {
     </div>
   `;
 
-  const bcc = await getGroupBcc([payload.to]);
   await transporter.sendMail({
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to: payload.to,
-    bcc: bcc.join(","),
+    bcc: await bccExcluding(payload.to),
     subject: `[${payload.issueCode}] รอการตรวจสอบ — ${payload.issueTitle}`,
     html,
   });
 }
 
 export async function sendCommentEmail(payload: CommentEmailPayload) {
-  const cfg = await getConfigs([
-    "email.enabled", "email.smtpHost", "email.smtpPort",
-    "email.smtpSecure", "email.smtpUser", "email.smtpPass",
-    "email.fromName", "email.fromEmail",
-  ]);
-
-  if (cfg["email.enabled"] !== "true") return;
-  if (!cfg["email.smtpHost"]) return;
-
-  const transporter = nodemailer.createTransport({
-    host: cfg["email.smtpHost"],
-    port: Number(cfg["email.smtpPort"] || 587),
-    secure: cfg["email.smtpSecure"] === "true",
-    auth: cfg["email.smtpUser"]
-      ? { user: cfg["email.smtpUser"], pass: cfg["email.smtpPass"] }
-      : undefined,
-  });
+  const mailer = await createMailer();
+  if (!mailer) return;
+  const { transporter, cfg } = mailer;
 
   const commentHtml = payload.commentContent
     .replace(/</g, "&lt;")
@@ -326,34 +311,19 @@ export async function sendCommentEmail(payload: CommentEmailPayload) {
     </div>
   `;
 
-  const bcc = await getGroupBcc([payload.to]);
   await transporter.sendMail({
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to: payload.to,
-    bcc: bcc.join(","),
+    bcc: await bccExcluding(payload.to),
     subject: `[${payload.issueCode}] New Comment — ${payload.issueTitle}`,
     html,
   });
 }
 
 export async function sendResolvedEmail(payload: ResolvedEmailPayload) {
-  const cfg = await getConfigs([
-    "email.enabled", "email.smtpHost", "email.smtpPort",
-    "email.smtpSecure", "email.smtpUser", "email.smtpPass",
-    "email.fromName", "email.fromEmail",
-  ]);
-
-  if (cfg["email.enabled"] !== "true") return;
-  if (!cfg["email.smtpHost"]) return;
-
-  const transporter = nodemailer.createTransport({
-    host: cfg["email.smtpHost"],
-    port: Number(cfg["email.smtpPort"] || 587),
-    secure: cfg["email.smtpSecure"] === "true",
-    auth: cfg["email.smtpUser"]
-      ? { user: cfg["email.smtpUser"], pass: cfg["email.smtpPass"] }
-      : undefined,
-  });
+  const mailer = await createMailer();
+  if (!mailer) return;
+  const { transporter, cfg } = mailer;
 
   const priorityLabel = PRIORITY_LABELS[payload.priority as keyof typeof PRIORITY_LABELS] ?? payload.priority;
   const priorityColor = PRIORITY_COLOR[payload.priority] ?? "#6b7280";
@@ -411,11 +381,10 @@ export async function sendResolvedEmail(payload: ResolvedEmailPayload) {
     </div>
   `;
 
-  const bcc = await getGroupBcc([payload.to]);
   await transporter.sendMail({
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to: payload.to,
-    bcc: bcc.join(","),
+    bcc: await bccExcluding(payload.to),
     subject: `[${payload.issueCode}] Issue Resolved — ${payload.issueTitle}`,
     html,
   });
