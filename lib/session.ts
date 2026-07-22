@@ -3,7 +3,6 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { getConfig } from "./config";
 import { UnauthorizedError } from "./errors";
-import { SESSION_DEFAULT_EXPIRY } from "./constants";
 
 export type SessionPayload = {
   userId: string;
@@ -16,14 +15,6 @@ export type SessionPayload = {
 
 const secretKey = process.env.SESSION_SECRET;
 const encodedKey = new TextEncoder().encode(secretKey);
-
-export async function encrypt(payload: SessionPayload) {
-  return new SignJWT(payload as unknown as Record<string, unknown>)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(SESSION_DEFAULT_EXPIRY)
-    .sign(encodedKey);
-}
 
 export async function decrypt(session?: string): Promise<SessionPayload | null> {
   if (!session) return null;

@@ -24,3 +24,6 @@ export const IMPORT_HEADER_ROWS = 2;
 
 // Session
 export const SESSION_DEFAULT_EXPIRY = "7d";
+
+// Security
+export const BCRYPT_ROUNDS = 12;

@@ -2,9 +2,12 @@
 
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createSession, deleteSession, getSession } from "@/lib/session";
 import { loginSchema, changePasswordSchema } from "@/lib/schemas";
+import { checkRateLimit, resetRateLimit } from "@/lib/rate-limit";
+import { BCRYPT_ROUNDS } from "@/lib/constants";
 
 export async function login(
   _state: { error?: string } | undefined,
@@ -19,6 +22,15 @@ export async function login(
   }
   const { email, password } = parsed.data;
 
+  const headerStore = await headers();
+  const ip = headerStore.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const rateLimitKey = `login:${ip}`;
+
+  const { allowed } = checkRateLimit(rateLimitKey);
+  if (!allowed) {
+    return { error: "พยายามเข้าสู่ระบบมากเกินไป กรุณารอ 15 นาที" };
+  }
+
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.isActive) {
     return { error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" };
@@ -28,6 +40,8 @@ export async function login(
   if (!valid) {
     return { error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" };
   }
+
+  resetRateLimit(rateLimitKey);
 
   await createSession({
     userId: user.id,
@@ -72,7 +86,7 @@ export async function changePassword(
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { password: await bcrypt.hash(newPassword, 12) },
+    data: { password: await bcrypt.hash(newPassword, BCRYPT_ROUNDS) },
   });
 
   return { success: true };

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/app/generated/prisma/client";
 import { requireSession } from "@/lib/session";
 import { canViewAllProjects, generateIssueCode } from "@/lib/utils";
 import { getPermissions } from "@/lib/permissions";
@@ -13,6 +14,7 @@ import type { IssuePriority, IssueStatus, SessionPayload } from "@/lib/types";
 import { UPLOAD_DIR, MAX_FILE_SIZE, BASE_URL } from "@/lib/constants";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createIssueSchema, addCommentSchema } from "@/lib/schemas";
+import { logger } from "@/lib/logger";
 
 async function requireProjectAccess(session: SessionPayload, projectId: string) {
   const perms = await getPermissions(session.role);
@@ -80,7 +82,7 @@ export async function createIssue(formData: FormData) {
       assigneeId: assigneeId || undefined,
       dateReported: dateReported ? new Date(dateReported) : undefined,
       dueDate: dueDate ? new Date(dueDate) : undefined,
-      customFields: Object.keys(customFields).length ? customFields as never : undefined,
+      customFields: Object.keys(customFields).length ? customFields as Prisma.InputJsonValue : undefined,
     },
   });
 
@@ -132,7 +134,7 @@ export async function createIssue(formData: FormData) {
         module,
         dueDate: dueDate ? new Date(dueDate) : null,
         description,
-      }).catch((err) => console.error("[mailer] createIssue failed:", err));
+      }).catch((err: unknown) => logger.error("[mailer] createIssue failed", { error: String(err) }));
     }
   }
 
@@ -193,7 +195,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
       dueDate: dueDate ? new Date(dueDate) : null,
       resolvedAt,
       lastModifiedAt: new Date(),
-      customFields: Object.keys(customFields).length ? customFields as never : undefined,
+      customFields: Object.keys(customFields).length ? customFields as Prisma.InputJsonValue : undefined,
     },
   });
 
@@ -258,7 +260,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
         module,
         dueDate: dueDate ? new Date(dueDate) : null,
         description,
-      }).catch((err) => console.error("[mailer] updateIssue assignment failed:", err));
+      }).catch((err: unknown) => logger.error("[mailer] updateIssue assignment failed", { error: String(err) }));
     }
   }
 
@@ -282,9 +284,9 @@ export async function updateIssue(issueId: string, formData: FormData) {
       solution,
     };
     if (status === "wait_for_user_check") {
-      sendWaitForCheckEmail(emailBase).catch((err) => console.error("[mailer] updateIssue waitForCheck failed:", err));
+      sendWaitForCheckEmail(emailBase).catch((err: unknown) => logger.error("[mailer] updateIssue waitForCheck failed", { error: String(err) }));
     } else if (status === "resolved") {
-      sendResolvedEmail(emailBase).catch((err) => console.error("[mailer] updateIssue resolved failed:", err));
+      sendResolvedEmail(emailBase).catch((err: unknown) => logger.error("[mailer] updateIssue resolved failed", { error: String(err) }));
     }
   }
 
@@ -352,7 +354,7 @@ export async function addComment(issueId: string, formData: FormData) {
       issueUrl,
       projectName: issue.project.name,
       commentContent: content,
-    }).catch((err) => console.error("[mailer] addComment failed:", err));
+    }).catch((err: unknown) => logger.error("[mailer] addComment failed", { error: String(err) }));
   }
 
   revalidatePath(`/issues/${issueId}`);
@@ -407,9 +409,9 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
       solution: existing.solution,
     };
     if (status === "wait_for_user_check") {
-      sendWaitForCheckEmail(emailBase).catch((err) => console.error("[mailer] updateIssueStatus waitForCheck failed:", err));
+      sendWaitForCheckEmail(emailBase).catch((err: unknown) => logger.error("[mailer] updateIssueStatus waitForCheck failed", { error: String(err) }));
     } else if (status === "resolved") {
-      sendResolvedEmail(emailBase).catch((err) => console.error("[mailer] updateIssueStatus resolved failed:", err));
+      sendResolvedEmail(emailBase).catch((err: unknown) => logger.error("[mailer] updateIssueStatus resolved failed", { error: String(err) }));
     }
   }
 
@@ -467,7 +469,7 @@ export async function resolveIssue(issueId: string, solution: string) {
       module: existing.module,
       dueDate: existing.dueDate,
       solution,
-    }).catch((err) => console.error("[mailer] resolveIssue failed:", err));
+    }).catch((err: unknown) => logger.error("[mailer] resolveIssue failed", { error: String(err) }));
   }
 
   revalidatePath("/issues");
@@ -536,7 +538,7 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
       module: issueWithProject.module,
       dueDate: issueWithProject.dueDate,
       description: issueWithProject.description,
-    }).catch((err) => console.error("[mailer] updateIssueAssignee failed:", err));
+    }).catch((err: unknown) => logger.error("[mailer] updateIssueAssignee failed", { error: String(err) }));
   }
 
   revalidatePath("/issues");
@@ -588,11 +590,14 @@ export async function bulkUpdateStatus(issueIds: string[], status: IssueStatus) 
     data: { status, modifiedById: session.userId, lastModifiedAt: new Date() },
   });
 
-  for (const id of issueIds) {
-    await prisma.activityLog.create({
-      data: { issueId: id, userId: session.userId, action: "status_changed", newValue: status },
-    });
-  }
+  await prisma.activityLog.createMany({
+    data: issueIds.map((issueId) => ({
+      issueId,
+      userId: session.userId,
+      action: "status_changed",
+      newValue: status,
+    })),
+  });
 
   revalidatePath("/issues");
 }

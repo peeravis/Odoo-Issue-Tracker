@@ -3,9 +3,7 @@ import ExcelJS from "exceljs";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/session";
-import { IMPORT_HEADER_ROWS } from "@/lib/constants";
-
-const BCRYPT_ROUNDS = 10;
+import { IMPORT_HEADER_ROWS, BCRYPT_ROUNDS } from "@/lib/constants";
 const HASH_CONCURRENCY = 8;
 
 type ImportResult = {

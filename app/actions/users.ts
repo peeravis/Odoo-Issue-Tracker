@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { ForbiddenError, ValidationError } from "@/lib/errors";
 import { createUserSchema, resetPasswordSchema } from "@/lib/schemas";
+import { BCRYPT_ROUNDS } from "@/lib/constants";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -27,7 +28,7 @@ export async function createUser(formData: FormData) {
   const { name, email, password, role } = parsed.data;
   const extraRoles = (formData.getAll("extraRoles") as string[]).filter(Boolean);
 
-  const hashed = await bcrypt.hash(password, 12);
+  const hashed = await bcrypt.hash(password, BCRYPT_ROUNDS);
   await prisma.user.create({ data: { name, email, password: hashed, role, extraRoles } });
 
   revalidatePath("/users");
