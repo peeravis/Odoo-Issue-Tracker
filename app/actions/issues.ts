@@ -10,7 +10,7 @@ import { canViewAllProjects, generateIssueCode } from "@/lib/utils";
 import { getPermissions } from "@/lib/permissions";
 import { sendAssignmentEmail } from "@/lib/mailer";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
-import { UPLOAD_DIR, MAX_FILE_SIZE } from "@/lib/constants";
+import { UPLOAD_DIR, MAX_FILE_SIZE, BASE_URL } from "@/lib/constants";
 
 async function requireSession() {
   const session = await getSession();
@@ -105,7 +105,7 @@ export async function createIssue(formData: FormData) {
       prisma.project.findUnique({ where: { id: projectId }, select: { name: true, code: true } }),
     ]);
     if (assignee?.email && project) {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+      const baseUrl = BASE_URL;
       sendAssignmentEmail({
         to: assignee.email,
         assigneeName: assignee.name,
@@ -224,7 +224,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
       }),
     ]);
     if (assignee?.email && issueWithProject) {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+      const baseUrl = BASE_URL;
       sendAssignmentEmail({
         to: assignee.email,
         assigneeName: assignee.name,
@@ -393,7 +393,7 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
   });
 
   if (assigneeId && assigneeId !== existing.assigneeId && newAssignee?.email && issueWithProject) {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const baseUrl = BASE_URL;
     sendAssignmentEmail({
       to: newAssignee.email,
       assigneeName: newAssignee.name,

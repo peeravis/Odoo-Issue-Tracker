@@ -1,5 +1,8 @@
 import path from "path";
 
+// App
+export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+
 // Pagination
 export const PAGE_SIZE = 25;
 

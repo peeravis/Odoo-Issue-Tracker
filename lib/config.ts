@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { BASE_URL } from "@/lib/constants";
 
 export const CONFIG_DEFAULTS: Record<string, string> = {
   "app.name": "Issue Tracker",
-  "app.baseUrl": process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000",
+  "app.baseUrl": BASE_URL,
   "app.logoUrl": "",
   "app.sessionTimeout": "480",
   "email.enabled": "true",
