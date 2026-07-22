@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { canViewAllProjects, generateIssueCode } from "@/lib/utils";
 import { getPermissions } from "@/lib/permissions";
-import { sendAssignmentEmail, sendWaitForCheckEmail, sendCommentEmail } from "@/lib/mailer";
+import { sendAssignmentEmail, sendWaitForCheckEmail, sendResolvedEmail, sendCommentEmail } from "@/lib/mailer";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
 import { UPLOAD_DIR, MAX_FILE_SIZE, BASE_URL } from "@/lib/constants";
 
@@ -254,9 +254,9 @@ export async function updateIssue(issueId: string, formData: FormData) {
     }
   }
 
-  // Send "wait for check" email if status changed to wait_for_user_check
-  if (status === "wait_for_user_check" && existing.status !== status && issueWithProject?.createdBy.email) {
-    sendWaitForCheckEmail({
+  // Send status-change email to creator when status changes to wait_for_user_check or resolved
+  if (existing.status !== status && issueWithProject?.createdBy.email) {
+    const emailBase = {
       to: issueWithProject.createdBy.email,
       creatorName: issueWithProject.createdBy.name,
       issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
@@ -269,7 +269,12 @@ export async function updateIssue(issueId: string, formData: FormData) {
       module,
       dueDate: dueDate ? new Date(dueDate) : null,
       solution,
-    }).catch((err) => console.error("[mailer] updateIssue waitForCheck failed:", err));
+    };
+    if (status === "wait_for_user_check") {
+      sendWaitForCheckEmail(emailBase).catch((err) => console.error("[mailer] updateIssue waitForCheck failed:", err));
+    } else if (status === "resolved") {
+      sendResolvedEmail(emailBase).catch((err) => console.error("[mailer] updateIssue resolved failed:", err));
+    }
   }
 
   revalidatePath(`/issues/${issueId}`);
@@ -381,8 +386,8 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
     data: { issueId, userId: session.userId, action: "status_changed", oldValue: existing.status, newValue: status },
   });
 
-  if (status === "wait_for_user_check" && existing.status !== status && existing.createdBy.email) {
-    sendWaitForCheckEmail({
+  if (existing.status !== status && existing.createdBy.email) {
+    const emailBase = {
       to: existing.createdBy.email,
       creatorName: existing.createdBy.name,
       issueCode: generateIssueCode(existing.project.code, existing.issueNumber),
@@ -395,7 +400,12 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
       module: existing.module,
       dueDate: existing.dueDate,
       solution: existing.solution,
-    }).catch((err) => console.error("[mailer] updateIssueStatus failed:", err));
+    };
+    if (status === "wait_for_user_check") {
+      sendWaitForCheckEmail(emailBase).catch((err) => console.error("[mailer] updateIssueStatus waitForCheck failed:", err));
+    } else if (status === "resolved") {
+      sendResolvedEmail(emailBase).catch((err) => console.error("[mailer] updateIssueStatus resolved failed:", err));
+    }
   }
 
   revalidatePath("/issues");
