@@ -5,15 +5,20 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateIssueStatus, resolveIssue } from "@/app/actions/issues";
 import { StatusBadge } from "./status-badge";
+import { STATUS_LABELS } from "@/lib/utils";
 import type { IssueStatus } from "@/lib/types";
+import { AlertTriangle } from "lucide-react";
 
 const STATUSES: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "resolved", "closed", "reopened"];
+
+type Pending = { from: IssueStatus; to: IssueStatus };
 
 export function StatusDropdown({ issueId, status }: { issueId: string; status: IssueStatus }) {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState(status);
   const [pending, startTransition] = useTransition();
   const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [confirm, setConfirm] = useState<Pending | null>(null);
   const [solutionModal, setSolutionModal] = useState(false);
   const [solution, setSolution] = useState("");
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -37,18 +42,25 @@ export function StatusDropdown({ issueId, status }: { issueId: string; status: I
   const handleSelect = (s: IssueStatus) => {
     setOpen(false);
     if (s === current) return;
+    setConfirm({ from: current, to: s });
+  };
 
-    if (s === "wait_for_user_check") {
+  const handleConfirm = () => {
+    if (!confirm) return;
+    const { to } = confirm;
+    setConfirm(null);
+
+    if (to === "wait_for_user_check") {
       setSolution("");
       setSolutionModal(true);
       return;
     }
 
     const prev = current;
-    setCurrent(s);
+    setCurrent(to);
     startTransition(async () => {
       try {
-        await updateIssueStatus(issueId, s);
+        await updateIssueStatus(issueId, to);
       } catch {
         setCurrent(prev);
       }
@@ -108,7 +120,54 @@ export function StatusDropdown({ issueId, status }: { issueId: string; status: I
             )}
           </AnimatePresence>
 
-          {/* Solution modal */}
+          {/* Confirm dialog */}
+          <AnimatePresence>
+            {confirm && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                onClick={(e) => { if (e.target === e.currentTarget) setConfirm(null); }}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-80 p-6"
+                >
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">เปลี่ยน Status</p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-5">
+                    ต้องการเปลี่ยน status จาก{" "}
+                    <span className="font-medium text-gray-900 dark:text-white">{STATUS_LABELS[confirm.from]}</span>
+                    {" "}เป็น{" "}
+                    <span className="font-medium text-indigo-600 dark:text-indigo-400">{STATUS_LABELS[confirm.to]}</span>
+                    {" "}ใช่หรือไม่?
+                  </p>
+
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setConfirm(null)} className="btn-secondary text-sm">
+                      ยกเลิก
+                    </button>
+                    <button onClick={handleConfirm} className="btn-primary text-sm">
+                      ยืนยัน
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Solution modal (for wait_for_user_check) */}
           <AnimatePresence>
             {solutionModal && (
               <motion.div
@@ -136,11 +195,7 @@ export function StatusDropdown({ issueId, status }: { issueId: string; status: I
                     className="input-base w-full mb-4 resize-none"
                   />
                   <div className="flex gap-3 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setSolutionModal(false)}
-                      className="btn-secondary px-4 py-2"
-                    >
+                    <button type="button" onClick={() => setSolutionModal(false)} className="btn-secondary px-4 py-2">
                       ยกเลิก
                     </button>
                     <button
