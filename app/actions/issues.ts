@@ -456,7 +456,7 @@ export async function uploadAttachment(issueId: string, formData: FormData) {
   const session = await requireSession();
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return;
-  if (file.size > MAX_FILE_SIZE) throw new Error("File too large (max 10 MB)");
+  if (file.size > MAX_FILE_SIZE) throw new Error("File too large (max 5 MB)");
 
   const bytes = await file.arrayBuffer();
   await mkdir(UPLOAD_DIR, { recursive: true });
