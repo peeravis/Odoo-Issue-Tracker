@@ -57,6 +57,8 @@ export interface WaitForCheckEmailPayload {
 export interface AssignmentEmailPayload {
   to: string;
   assigneeName: string;
+  creatorName: string;
+  creatorEmail: string;
   issueCode: string;
   issueTitle: string;
   issueUrl: string;
@@ -126,11 +128,13 @@ export async function sendAssignmentEmail(payload: AssignmentEmailPayload) {
         <p style="margin:0 0 16px;color:#6b7280">คุณได้รับมอบหมาย issue ใน <strong style="color:#111827">${payload.projectName}</strong></p>
 
         <table style="border-collapse:collapse;width:100%;margin-bottom:8px;font-size:13px">
-          ${row("Issue ID", `<strong>${payload.issueCode}</strong>`)}
-          ${row("Title", `<strong>${payload.issueTitle}</strong>`)}
-          ${row("Project", payload.projectName)}
-          ${row("Priority", `<span style="color:${priorityColor};font-weight:600">${priorityLabel}</span>`)}
-          ${row("Status", statusLabel)}
+          ${row("Issue ID",    `<strong>${payload.issueCode}</strong>`)}
+          ${row("Title",       `<strong>${payload.issueTitle}</strong>`)}
+          ${row("Project",     payload.projectName)}
+          ${row("Priority",    `<span style="color:${priorityColor};font-weight:600">${priorityLabel}</span>`)}
+          ${row("Status",      statusLabel)}
+          ${row("Opened By",   `${payload.creatorName} &lt;${payload.creatorEmail}&gt;`)}
+          ${row("Assigned To", `${payload.assigneeName} &lt;${payload.to}&gt;`)}
           ${payload.client     ? row("Client",     payload.client)     : ""}
           ${payload.department ? row("Department", payload.department) : ""}
           ${payload.module     ? row("Module",     payload.module)     : ""}

@@ -109,6 +109,8 @@ export async function createIssue(formData: FormData) {
       sendAssignmentEmail({
         to: assignee.email,
         assigneeName: assignee.name,
+        creatorName: session.name,
+        creatorEmail: session.email,
         issueTitle: title,
         issueCode: generateIssueCode(project.code, issueNumber),
         issueUrl: `${BASE_URL}/issues/${issue.id}`,
@@ -239,6 +241,8 @@ export async function updateIssue(issueId: string, formData: FormData) {
       sendAssignmentEmail({
         to: assignee.email,
         assigneeName: assignee.name,
+        creatorName: issueWithProject.createdBy.name,
+        creatorEmail: issueWithProject.createdBy.email,
         issueTitle: title,
         issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
         issueUrl: `${BASE_URL}/issues/${issueId}`,
@@ -520,6 +524,7 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
         department: true, module: true, description: true, dueDate: true,
         client: { select: { name: true } },
         project: { select: { name: true, code: true } },
+        createdBy: { select: { name: true, email: true } },
       },
     }),
   ]);
@@ -536,6 +541,8 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
     sendAssignmentEmail({
       to: newAssignee.email,
       assigneeName: newAssignee.name,
+      creatorName: issueWithProject.createdBy.name,
+      creatorEmail: issueWithProject.createdBy.email,
       issueTitle: issueWithProject.title,
       issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
       issueUrl: `${BASE_URL}/issues/${issueId}`,
