@@ -11,6 +11,7 @@ import Link from "next/link";
 import { formatDate, generateIssueCode } from "@/lib/utils";
 import { ProjectFilter } from "@/components/dashboard/project-filter";
 import { ReportExport } from "@/components/dashboard/report-export";
+import { DailyReport } from "@/components/dashboard/daily-report";
 
 export default async function DashboardPage({
   searchParams,
@@ -38,7 +39,11 @@ export default async function DashboardPage({
     ? { projectId: selectedProject.id }
     : { projectId: { in: allProjects.map((p) => p.id) } };
 
-  const [openCount, inProgressCount, resolvedCount, closedCount, reopenedCount, recentIssues, priorityStats, monthlyStats, overdueIssues, projectStats, assigneeStats] =
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [openCount, inProgressCount, resolvedCount, closedCount, reopenedCount, recentIssues, priorityStats, monthlyStats, overdueIssues, projectStats, assigneeStats,
+    todayNewCount, todayByStatus, pendingTotal, pendingByStatus, todayResolvedCount, totalAllCount] =
     await Promise.all([
       prisma.issue.count({ where: { ...projectFilter, status: "open" } }),
       prisma.issue.count({ where: { ...projectFilter, status: "in_progress" } }),
@@ -92,6 +97,13 @@ export default async function DashboardPage({
         orderBy: { _count: { assigneeId: "desc" } },
         take: 8,
       }),
+      // Daily report queries
+      prisma.issue.count({ where: { ...projectFilter, createdAt: { gte: todayStart } } }),
+      prisma.issue.groupBy({ by: ["status"], where: { ...projectFilter, createdAt: { gte: todayStart } }, _count: true }),
+      prisma.issue.count({ where: { ...projectFilter, status: { in: ["open", "in_progress", "wait_for_user_check", "reopened"] } } }),
+      prisma.issue.groupBy({ by: ["status"], where: { ...projectFilter, status: { in: ["open", "in_progress", "wait_for_user_check", "reopened"] } }, _count: true }),
+      prisma.issue.count({ where: { ...projectFilter, resolvedAt: { gte: todayStart } } }),
+      prisma.issue.count({ where: projectFilter }),
     ]);
 
   const totalIssues = openCount + inProgressCount + resolvedCount + closedCount + reopenedCount;
@@ -149,6 +161,20 @@ export default async function DashboardPage({
 
           <ProjectFilter projects={allProjects} selectedId={sp.projectId} />
         </div>
+      </FadeUp>
+
+      {/* Daily Report */}
+      <FadeUp delay={0.04}>
+        <DailyReport
+          todayNewCount={todayNewCount}
+          todayByStatus={todayByStatus}
+          pendingTotal={pendingTotal}
+          pendingByStatus={pendingByStatus}
+          todayResolvedCount={todayResolvedCount}
+          totalIssues={totalAllCount}
+          projectId={sp.projectId}
+          dateLabel={new Date().toLocaleDateString("th-TH", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+        />
       </FadeUp>
 
       {/* Status Stats */}

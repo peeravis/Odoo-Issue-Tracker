@@ -48,7 +48,16 @@ export async function GET(request: NextRequest) {
     };
   }
 
-  const [issues, statusCounts] = await Promise.all([
+  const isDaily = sp.get("daily") === "1";
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const projectFilterForPending = {
+    projectId: baseWhere.projectId as string | { in: string[] },
+    status: { in: ["open", "in_progress", "wait_for_user_check", "reopened"] as const },
+  };
+
+  const [issues, statusCounts, totalAllCount, todayByStatus, pendingByStatus, todayResolvedCount] = await Promise.all([
     prisma.issue.findMany({
       where: baseWhere,
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -60,16 +69,99 @@ export async function GET(request: NextRequest) {
         loggedBy: { select: { name: true } },
       },
     }),
-    prisma.issue.groupBy({
-      by: ["status"],
-      where: baseWhere,
-      _count: true,
-    }),
+    prisma.issue.groupBy({ by: ["status"], where: baseWhere, _count: true }),
+    prisma.issue.count({ where: { projectId: baseWhere.projectId as string | { in: string[] } } }),
+    isDaily ? prisma.issue.groupBy({ by: ["status"], where: { projectId: baseWhere.projectId as string | { in: string[] }, createdAt: { gte: todayStart } }, _count: true }) : Promise.resolve([]),
+    isDaily ? prisma.issue.groupBy({ by: ["status"], where: projectFilterForPending, _count: true }) : Promise.resolve([]),
+    isDaily ? prisma.issue.count({ where: { projectId: baseWhere.projectId as string | { in: string[] }, resolvedAt: { gte: todayStart } } }) : Promise.resolve(0),
   ]);
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Issue Log Tracker";
   workbook.created = new Date();
+
+  // ── Sheet 0: Daily Report (only when daily=1) ─────────────────────────────
+  if (isDaily) {
+    const todayNewCount = todayByStatus.reduce((s, r) => s + r._count, 0);
+    const pendingTotal  = pendingByStatus.reduce((s, r) => s + r._count, 0);
+    const pct = (n: number, d: number) => (d > 0 ? `${Math.round((n / d) * 100)}%` : "0%");
+    const todayLabel = format(new Date(), "yyyy-MM-dd");
+
+    const daily = workbook.addWorksheet("Daily Report");
+
+    const title = daily.addRow([`Daily Report — ${todayLabel}`]);
+    title.getCell(1).font = { bold: true, size: 16, color: { argb: "FF4F46E5" } };
+    daily.addRow(["Export เมื่อ:", format(new Date(), "yyyy-MM-dd HH:mm")]);
+    daily.addRow([]);
+
+    // Section 1: Summary
+    const sec1 = daily.addRow(["สรุปภาพรวมวันนี้"]);
+    sec1.getCell(1).font = { bold: true, size: 12 };
+    const sec1hdr = daily.addRow(["รายการ", "จำนวน (เคส)", "% ของทั้งหมด"]);
+    sec1hdr.eachCell((c) => {
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F46E5" } };
+      c.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      c.alignment = { horizontal: "center" };
+    });
+    const rows1 = [
+      ["เคสที่เปิดวันนี้",   todayNewCount,      pct(todayNewCount, totalAllCount)],
+      ["เคสค้างอยู่ทั้งหมด", pendingTotal,        pct(pendingTotal, totalAllCount)],
+      ["Resolve วันนี้",      todayResolvedCount, pct(todayResolvedCount, totalAllCount)],
+      ["เคสทั้งหมด",          totalAllCount,      "100%"],
+    ];
+    rows1.forEach(([label, count, percent]) => {
+      const r = daily.addRow([label, count, percent]);
+      r.getCell(2).alignment = { horizontal: "center" };
+      r.getCell(3).alignment = { horizontal: "center" };
+    });
+    daily.addRow([]);
+
+    // Section 2: Today's cases by status
+    const sec2 = daily.addRow(["เคสที่เปิดวันนี้ แยกตาม Status"]);
+    sec2.getCell(1).font = { bold: true, size: 12 };
+    const sec2hdr = daily.addRow(["Status", "จำนวน", "% ของวันนี้", "% ของทั้งหมด"]);
+    sec2hdr.eachCell((c) => {
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4F46E5" } };
+      c.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      c.alignment = { horizontal: "center" };
+    });
+    for (const s of STATUS_ORDER) {
+      const cnt = todayByStatus.find((r) => r.status === s)?._count ?? 0;
+      if (cnt === 0) continue;
+      const r = daily.addRow([STATUS_LABELS[s], cnt, pct(cnt, todayNewCount), pct(cnt, totalAllCount)]);
+      r.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: STATUS_COLORS[s] + "33" } };
+      r.getCell(1).font = { bold: true, color: { argb: STATUS_COLORS[s] } };
+      [2, 3, 4].forEach((col) => (r.getCell(col).alignment = { horizontal: "center" }));
+    }
+    daily.addRow([]);
+
+    // Section 3: Pending/remaining by status
+    const sec3 = daily.addRow(["เคสค้างอยู่ แยกตาม Status"]);
+    sec3.getCell(1).font = { bold: true, size: 12 };
+    const sec3hdr = daily.addRow(["Status", "จำนวน", "% ของค้างทั้งหมด", "% ของเคสทั้งหมด"]);
+    sec3hdr.eachCell((c) => {
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFB45309" } };
+      c.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      c.alignment = { horizontal: "center" };
+    });
+    for (const s of STATUS_ORDER) {
+      const cnt = pendingByStatus.find((r) => r.status === s)?._count ?? 0;
+      if (cnt === 0) continue;
+      const r = daily.addRow([STATUS_LABELS[s], cnt, pct(cnt, pendingTotal), pct(cnt, totalAllCount)]);
+      r.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: STATUS_COLORS[s] + "33" } };
+      r.getCell(1).font = { bold: true, color: { argb: STATUS_COLORS[s] } };
+      [2, 3, 4].forEach((col) => (r.getCell(col).alignment = { horizontal: "center" }));
+    }
+    daily.addRow([]);
+    const totalRow = daily.addRow(["รวมค้างทั้งหมด", pendingTotal, "100%", pct(pendingTotal, totalAllCount)]);
+    totalRow.eachCell((c) => { c.font = { bold: true }; c.alignment = { horizontal: "center" }; });
+    totalRow.getCell(1).alignment = { horizontal: "left" };
+
+    daily.getColumn(1).width = 30;
+    daily.getColumn(2).width = 16;
+    daily.getColumn(3).width = 18;
+    daily.getColumn(4).width = 18;
+  }
 
   // ── Sheet 1: Summary ─────────────────────────────────────────────────────────
   const summarySheet = workbook.addWorksheet("Summary");
