@@ -1,6 +1,17 @@
 import nodemailer from "nodemailer";
 import { getConfigs } from "./config";
 import { PRIORITY_LABELS, STATUS_LABELS } from "./utils";
+import { prisma } from "./prisma";
+
+/** Fetch emails of all active ASPD/Vendor users, excluding specified addresses. */
+async function getGroupBcc(exclude: string[]): Promise<string[]> {
+  const excludeSet = new Set(exclude.map((e) => e.toLowerCase()));
+  const users = await prisma.user.findMany({
+    where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
+    select: { email: true },
+  });
+  return users.map((u) => u.email).filter((e) => e && !excludeSet.has(e.toLowerCase()));
+}
 
 export interface ResolvedEmailPayload {
   to: string;
@@ -142,9 +153,11 @@ export async function sendAssignmentEmail(payload: AssignmentEmailPayload) {
     </div>
   `;
 
+  const bcc = await getGroupBcc([payload.to]);
   await transporter.sendMail({
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to: payload.to,
+    bcc: bcc.join(","),
     subject: `[${payload.issueCode}] You have been assigned — ${payload.issueTitle}`,
     html,
   });
@@ -223,9 +236,11 @@ export async function sendWaitForCheckEmail(payload: WaitForCheckEmailPayload) {
     </div>
   `;
 
+  const bcc = await getGroupBcc([payload.to]);
   await transporter.sendMail({
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to: payload.to,
+    bcc: bcc.join(","),
     subject: `[${payload.issueCode}] รอการตรวจสอบ — ${payload.issueTitle}`,
     html,
   });
@@ -293,9 +308,11 @@ export async function sendCommentEmail(payload: CommentEmailPayload) {
     </div>
   `;
 
+  const bcc = await getGroupBcc([payload.to]);
   await transporter.sendMail({
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to: payload.to,
+    bcc: bcc.join(","),
     subject: `[${payload.issueCode}] New Comment — ${payload.issueTitle}`,
     html,
   });
@@ -374,9 +391,11 @@ export async function sendResolvedEmail(payload: ResolvedEmailPayload) {
     </div>
   `;
 
+  const bcc = await getGroupBcc([payload.to]);
   await transporter.sendMail({
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to: payload.to,
+    bcc: bcc.join(","),
     subject: `[${payload.issueCode}] Issue Resolved — ${payload.issueTitle}`,
     html,
   });
