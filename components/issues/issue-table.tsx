@@ -244,7 +244,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: Issu
                             <td className="px-4 py-3">
                               <Link
                                 href={`/issues/${issue.id}`}
-                                className="font-medium text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-1"
+                                className="font-medium text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors break-words"
                               >
                                 {issue.title}
                               </Link>
