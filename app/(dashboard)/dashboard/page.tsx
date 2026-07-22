@@ -12,6 +12,7 @@ import { formatDate, generateIssueCode } from "@/lib/utils";
 import { ProjectFilter } from "@/components/dashboard/project-filter";
 import { ReportExport } from "@/components/dashboard/report-export";
 import { DailyReport } from "@/components/dashboard/daily-report";
+import { StatusDonutChart } from "@/components/dashboard/status-donut-chart";
 
 export default async function DashboardPage({
   searchParams,
@@ -42,11 +43,12 @@ export default async function DashboardPage({
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [openCount, inProgressCount, resolvedCount, closedCount, reopenedCount, recentIssues, priorityStats, monthlyStats, overdueIssues, projectStats, assigneeStats,
+  const [openCount, inProgressCount, waitForCheckCount, resolvedCount, closedCount, reopenedCount, recentIssues, priorityStats, monthlyStats, overdueIssues, projectStats, assigneeStats,
     todayNewCount, todayByStatus, pendingTotal, pendingByStatus, todayResolvedCount, totalAllCount] =
     await Promise.all([
       prisma.issue.count({ where: { ...projectFilter, status: "open" } }),
       prisma.issue.count({ where: { ...projectFilter, status: "in_progress" } }),
+      prisma.issue.count({ where: { ...projectFilter, status: "wait_for_user_check" } }),
       prisma.issue.count({ where: { ...projectFilter, status: "resolved" } }),
       prisma.issue.count({ where: { ...projectFilter, status: "closed" } }),
       prisma.issue.count({ where: { ...projectFilter, status: "reopened" } }),
@@ -106,7 +108,7 @@ export default async function DashboardPage({
       prisma.issue.count({ where: projectFilter }),
     ]);
 
-  const totalIssues = openCount + inProgressCount + resolvedCount + closedCount + reopenedCount;
+  const totalIssues = openCount + inProgressCount + waitForCheckCount + resolvedCount + closedCount + reopenedCount;
 
   // Build 6-month trend
   const now = new Date();
@@ -178,9 +180,10 @@ export default async function DashboardPage({
       </FadeUp>
 
       {/* Status Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatsCard label="Open" value={openCount} icon={<AlertCircle className="h-5 w-5 text-white" />} color="bg-blue-500" delay={0.05} />
         <StatsCard label="In Progress" value={inProgressCount} icon={<Clock className="h-5 w-5 text-white" />} color="bg-purple-500" delay={0.1} />
+        <StatsCard label="Wait Check" value={waitForCheckCount} icon={<AlertTriangle className="h-5 w-5 text-white" />} color="bg-orange-500" delay={0.12} />
         <StatsCard label="Resolved" value={resolvedCount} icon={<CheckCircle className="h-5 w-5 text-white" />} color="bg-emerald-500" delay={0.15} />
         <StatsCard label="Cancelled" value={closedCount} icon={<XCircle className="h-5 w-5 text-white" />} color="bg-slate-500" delay={0.2} />
         <StatsCard label="Reopened" value={reopenedCount} icon={<Bug className="h-5 w-5 text-white" />} color="bg-rose-500" delay={0.25} />
@@ -195,33 +198,18 @@ export default async function DashboardPage({
               <BarChart3 className="h-4 w-4 text-gray-400" />
               <h2 className="font-semibold text-gray-900 dark:text-white text-sm">Status Distribution</h2>
             </div>
-            {/* Stacked bar */}
             {totalIssues > 0 ? (
-              <>
-                <div className="flex h-5 rounded-lg overflow-hidden gap-0.5 mb-4">
-                  {openCount > 0 && <div style={{ width: `${(openCount / totalIssues) * 100}%` }} className="bg-blue-500" title={`Open: ${openCount}`} />}
-                  {inProgressCount > 0 && <div style={{ width: `${(inProgressCount / totalIssues) * 100}%` }} className="bg-purple-500" title={`In Progress: ${inProgressCount}`} />}
-                  {resolvedCount > 0 && <div style={{ width: `${(resolvedCount / totalIssues) * 100}%` }} className="bg-emerald-500" title={`Resolved: ${resolvedCount}`} />}
-                  {closedCount > 0 && <div style={{ width: `${(closedCount / totalIssues) * 100}%` }} className="bg-slate-400" title={`Cancelled: ${closedCount}`} />}
-                  {reopenedCount > 0 && <div style={{ width: `${(reopenedCount / totalIssues) * 100}%` }} className="bg-rose-500" title={`Reopened: ${reopenedCount}`} />}
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { label: "Open", count: openCount, color: "bg-blue-500" },
-                    { label: "In Progress", count: inProgressCount, color: "bg-purple-500" },
-                    { label: "Resolved", count: resolvedCount, color: "bg-emerald-500" },
-                    { label: "Cancelled", count: closedCount, color: "bg-slate-400" },
-                    { label: "Reopened", count: reopenedCount, color: "bg-rose-500" },
-                  ].filter((s) => s.count > 0).map((s) => (
-                    <div key={s.label} className="flex items-center gap-2 text-xs">
-                      <span className={`w-2.5 h-2.5 rounded-sm flex-shrink-0 ${s.color}`} />
-                      <span className="text-gray-600 dark:text-gray-400 flex-1">{s.label}</span>
-                      <span className="font-medium text-gray-900 dark:text-white tabular-nums">{s.count}</span>
-                      <span className="text-gray-400 w-10 text-right">{Math.round((s.count / totalIssues) * 100)}%</span>
-                    </div>
-                  ))}
-                </div>
-              </>
+              <StatusDonutChart
+                total={totalIssues}
+                segments={[
+                  { label: "Open", count: openCount, color: "#3B82F6" },
+                  { label: "In Progress", count: inProgressCount, color: "#A855F7" },
+                  { label: "Wait for Check", count: waitForCheckCount, color: "#F97316" },
+                  { label: "Resolved", count: resolvedCount, color: "#10B981" },
+                  { label: "Cancelled", count: closedCount, color: "#94A3B8" },
+                  { label: "Reopened", count: reopenedCount, color: "#F43F5E" },
+                ]}
+              />
             ) : (
               <p className="text-sm text-gray-400 py-4">ยังไม่มี issues</p>
             )}
