@@ -358,7 +358,7 @@ export async function GET(request: NextRequest) {
     const count = priorityMap.get(priority) ?? 0;
     if (count === 0) continue;
     const { dark, light } = PRIORITY_PALETTE[priority];
-    const row = ws.addRow([PRIORITY_LABELS[priority], count, pct(count, totalInPeriod), pct(count, totalAllCount), ""]);
+    const row = ws.addRow([PRIORITY_LABELS[priority as keyof typeof PRIORITY_LABELS] ?? priority, count, pct(count, totalInPeriod), pct(count, totalAllCount), ""]);
     row.height = 22;
 
     setFill(row.getCell(1), light);
