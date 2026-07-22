@@ -86,6 +86,7 @@ export default async function IssueDetailPage({
   const uploadAction = uploadAttachment.bind(null, id);
   const deleteAttachmentAction = deleteAttachment.bind(null, id);
   const canManage = issuePerms.canViewAllProjects;
+  const isAdmin = session.role === "admin";
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -372,7 +373,7 @@ export default async function IssueDetailPage({
                       <div className={`flex items-center gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{c.user.name}</span>
                         <span className="text-xs text-gray-400">{formatDateTime(c.createdAt)}</span>
-                        {(isOwn || canManage) && (
+                        {(isOwn || isAdmin) && (
                           <DeleteConfirmButton action={deleteComment.bind(null, c.id, id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5 rounded transition-opacity" iconClassName="h-3 w-3" />
                         )}
                       </div>

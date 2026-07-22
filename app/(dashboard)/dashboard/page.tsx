@@ -87,7 +87,10 @@ export default async function DashboardPage({
       prisma.issue.findMany({
         where: {
           ...projectFilter,
-          createdAt: { gte: new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000) },
+          createdAt: {
+            gte: fromDate ?? new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000),
+            ...(toDate ? { lte: toDate } : {}),
+          },
         },
         select: { createdAt: true },
         orderBy: { createdAt: "asc" },
@@ -144,19 +147,47 @@ export default async function DashboardPage({
   const reopenedCount = getStatusCount("reopened");
   const totalIssues = statusCounts.reduce((sum, x) => sum + x._count, 0);
 
-  // Build 6-month trend
+  // Decide daily vs monthly view
+  const rangeInDays = (fromDate && toDate)
+    ? Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    : 0;
+  const showDailyChart = hasDates && rangeInDays > 0 && rangeInDays <= 60;
+
+  // Build daily trend (when date range ≤ 60 days)
+  const days: { label: string; count: number; showLabel: boolean }[] = [];
+  if (showDailyChart && fromDate && toDate) {
+    const cur = new Date(fromDate);
+    cur.setHours(0, 0, 0, 0);
+    let idx = 0;
+    while (cur <= toDate) {
+      const dayStart = new Date(cur);
+      const dayEnd = new Date(cur);
+      dayEnd.setHours(23, 59, 59, 999);
+      const count = monthlyStats.filter((s) => s.createdAt >= dayStart && s.createdAt <= dayEnd).length;
+      const label = cur.toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+      // For ranges > 21 days, show label every 7 days; <= 21 days show all
+      const showLabel = rangeInDays <= 21 || idx % 7 === 0 || idx === rangeInDays - 1;
+      days.push({ label, count, showLabel });
+      cur.setDate(cur.getDate() + 1);
+      idx++;
+    }
+  }
+
+  // Build 6-month trend (default, or when range > 60 days)
   const now = new Date();
   const months: { label: string; count: number }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const label = d.toLocaleString("th-TH", { month: "short", year: "2-digit" });
-    const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-    const count = monthlyStats.filter(
-      (s) => s.createdAt >= d && s.createdAt < nextMonth
-    ).length;
-    months.push({ label, count });
+  if (!showDailyChart) {
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString("th-TH", { month: "short", year: "2-digit" });
+      const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+      const count = monthlyStats.filter((s) => s.createdAt >= d && s.createdAt < nextMonth).length;
+      months.push({ label, count });
+    }
   }
-  const maxMonthly = Math.max(...months.map((m) => m.count), 1);
+
+  const chartData = showDailyChart ? days : months.map((m) => ({ ...m, showLabel: true }));
+  const maxChart = Math.max(...chartData.map((m) => m.count), 1);
 
   // Resolve project names for chart
   const projectStatIds = projectStats.map((s) => s.projectId);
@@ -299,25 +330,41 @@ export default async function DashboardPage({
         </FadeUp>
       </div>
 
-      {/* Monthly Trend */}
+      {/* Trend Chart */}
       <FadeUp delay={0.14}>
         <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="h-4 w-4 text-gray-400" />
-            <h2 className="font-semibold text-gray-900 dark:text-white text-sm">Issues Created (Last 6 Months)</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white text-sm">
+              {showDailyChart
+                ? `Issues Created (รายวัน ${rangeInDays} วัน)`
+                : "Issues Created (Last 6 Months)"}
+            </h2>
           </div>
-          <div className="flex items-end gap-3 h-32">
-            {months.map((m) => (
-              <div key={m.label} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{m.count || ""}</span>
-                <div className="w-full flex items-end" style={{ height: "80px" }}>
+          <div className={`flex items-end h-32 ${showDailyChart && rangeInDays > 21 ? "gap-0.5 overflow-x-auto" : "gap-3"}`}>
+            {chartData.map((m, i) => (
+              <div
+                key={i}
+                className={`flex flex-col items-center gap-1 ${showDailyChart && rangeInDays > 21 ? "min-w-[14px]" : "flex-1"}`}
+              >
+                {m.count > 0 && (
+                  <span className={`tabular-nums text-gray-500 dark:text-gray-400 ${rangeInDays > 30 ? "text-[9px]" : "text-xs"}`}>
+                    {m.count}
+                  </span>
+                )}
+                <div className="w-full flex items-end flex-1" style={{ height: "80px" }}>
                   <div
-                    className="w-full bg-indigo-500/80 hover:bg-indigo-500 rounded-t-md transition-all duration-300"
-                    style={{ height: `${Math.max((m.count / maxMonthly) * 80, m.count > 0 ? 4 : 0)}px` }}
+                    className="w-full bg-indigo-500/80 hover:bg-indigo-500 rounded-t-sm transition-all duration-300"
+                    style={{ height: `${Math.max((m.count / maxChart) * 80, m.count > 0 ? 3 : 0)}px` }}
                     title={`${m.label}: ${m.count} issues`}
                   />
                 </div>
-                <span className="text-xs text-gray-400 text-center leading-tight">{m.label}</span>
+                {m.showLabel && (
+                  <span className={`text-gray-400 text-center leading-tight truncate max-w-full ${rangeInDays > 30 ? "text-[9px]" : "text-xs"}`}>
+                    {m.label}
+                  </span>
+                )}
+                {!m.showLabel && <span className="text-[9px] text-transparent select-none">·</span>}
               </div>
             ))}
           </div>

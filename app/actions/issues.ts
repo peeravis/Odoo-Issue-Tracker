@@ -654,7 +654,7 @@ export async function deleteComment(commentId: string, issueId: string) {
   const comment = await prisma.comment.findUnique({ where: { id: commentId } });
   if (!comment) return;
 
-  if (comment.userId !== session.userId && !canViewAllProjects(session.role)) {
+  if (comment.userId !== session.userId && session.role !== "admin") {
     throw new ForbiddenError();
   }
 
