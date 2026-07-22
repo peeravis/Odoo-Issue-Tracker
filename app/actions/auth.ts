@@ -34,7 +34,9 @@ export async function login(
     extraRoles: user.extraRoles,
   });
 
-  redirect(user.role === "admin" ? "/dashboard" : "/projects");
+  const callbackUrl = (formData.get("callbackUrl") as string) || "";
+  const isSafe = callbackUrl.startsWith("/") && !callbackUrl.startsWith("//");
+  redirect(isSafe ? callbackUrl : user.role === "admin" ? "/dashboard" : "/projects");
 }
 
 export async function logout() {
