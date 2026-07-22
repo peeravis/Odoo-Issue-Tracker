@@ -375,9 +375,13 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
     if (!membership) throw new Error("Unauthorized");
   }
 
-  const [oldAssignee, newAssignee] = await Promise.all([
+  const [oldAssignee, newAssignee, issueWithProject] = await Promise.all([
     existing.assigneeId ? prisma.user.findUnique({ where: { id: existing.assigneeId }, select: { name: true } }) : null,
-    assigneeId ? prisma.user.findUnique({ where: { id: assigneeId }, select: { name: true } }) : null,
+    assigneeId ? prisma.user.findUnique({ where: { id: assigneeId }, select: { name: true, email: true } }) : null,
+    prisma.issue.findUnique({
+      where: { id: issueId },
+      select: { title: true, issueNumber: true, project: { select: { name: true, code: true } } },
+    }),
   ]);
 
   await prisma.issue.update({
@@ -387,6 +391,19 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
   await prisma.activityLog.create({
     data: { issueId, userId: session.userId, action: "assignee_changed", oldValue: oldAssignee?.name ?? null, newValue: newAssignee?.name ?? null },
   });
+
+  if (assigneeId && assigneeId !== existing.assigneeId && newAssignee?.email && issueWithProject) {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    sendAssignmentEmail({
+      to: newAssignee.email,
+      assigneeName: newAssignee.name,
+      issueTitle: issueWithProject.title,
+      issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
+      issueUrl: `${baseUrl}/issues/${issueId}`,
+      projectName: issueWithProject.project.name,
+    }).catch(() => {});
+  }
+
   revalidatePath("/issues");
   revalidatePath(`/issues/${issueId}`);
 }
