@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { canViewAllProjects, generateIssueCode } from "@/lib/utils";
 import { getPermissions } from "@/lib/permissions";
-import { sendAssignmentEmail } from "@/lib/mailer";
+import { sendAssignmentEmail, sendWaitForCheckEmail } from "@/lib/mailer";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
 import { UPLOAD_DIR, MAX_FILE_SIZE, BASE_URL } from "@/lib/constants";
 
@@ -220,21 +220,22 @@ export async function updateIssue(issueId: string, formData: FormData) {
     });
   }
 
-  // Send email if assignee changed to a new person
+  // Fetch project/client for email(s) that may need to fire
+  const issueWithProject = await prisma.issue.findUnique({
+    where: { id: issueId },
+    select: {
+      issueNumber: true,
+      client: { select: { name: true } },
+      project: { select: { name: true, code: true } },
+      createdBy: { select: { name: true, email: true } },
+    },
+  });
+
+  // Send assignment email if assignee changed to a new person
   const newAssigneeId = assigneeId || null;
-  if (newAssigneeId && newAssigneeId !== existing.assigneeId) {
-    const [assignee, issueWithProject] = await Promise.all([
-      prisma.user.findUnique({ where: { id: newAssigneeId }, select: { name: true, email: true } }),
-      prisma.issue.findUnique({
-        where: { id: issueId },
-        select: {
-          issueNumber: true,
-          client: { select: { name: true } },
-          project: { select: { name: true, code: true } },
-        },
-      }),
-    ]);
-    if (assignee?.email && issueWithProject) {
+  if (newAssigneeId && newAssigneeId !== existing.assigneeId && issueWithProject) {
+    const assignee = await prisma.user.findUnique({ where: { id: newAssigneeId }, select: { name: true, email: true } });
+    if (assignee?.email) {
       sendAssignmentEmail({
         to: assignee.email,
         assigneeName: assignee.name,
@@ -249,8 +250,26 @@ export async function updateIssue(issueId: string, formData: FormData) {
         module,
         dueDate: dueDate ? new Date(dueDate) : null,
         description,
-      }).catch((err) => console.error("[mailer] updateIssue failed:", err));
+      }).catch((err) => console.error("[mailer] updateIssue assignment failed:", err));
     }
+  }
+
+  // Send "wait for check" email if status changed to wait_for_user_check
+  if (status === "wait_for_user_check" && existing.status !== status && issueWithProject?.createdBy.email) {
+    sendWaitForCheckEmail({
+      to: issueWithProject.createdBy.email,
+      creatorName: issueWithProject.createdBy.name,
+      issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
+      issueTitle: title,
+      issueUrl: `${BASE_URL}/issues/${issueId}`,
+      projectName: issueWithProject.project.name,
+      priority,
+      client: issueWithProject.client?.name,
+      department,
+      module,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      solution,
+    }).catch((err) => console.error("[mailer] updateIssue waitForCheck failed:", err));
   }
 
   revalidatePath(`/issues/${issueId}`);
@@ -302,7 +321,17 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
     if (!membership) throw new Error("Unauthorized");
   }
 
-  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { status: true, resolvedAt: true } });
+  const existing = await prisma.issue.findUnique({
+    where: { id: issueId },
+    select: {
+      status: true, resolvedAt: true,
+      title: true, issueNumber: true, priority: true,
+      department: true, module: true, dueDate: true, solution: true,
+      client: { select: { name: true } },
+      project: { select: { name: true, code: true } },
+      createdBy: { select: { name: true, email: true } },
+    },
+  });
   if (!existing) throw new Error("Not found");
 
   const resolvedAt =
@@ -316,6 +345,23 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
   await prisma.activityLog.create({
     data: { issueId, userId: session.userId, action: "status_changed", oldValue: existing.status, newValue: status },
   });
+
+  if (status === "wait_for_user_check" && existing.status !== status && existing.createdBy.email) {
+    sendWaitForCheckEmail({
+      to: existing.createdBy.email,
+      creatorName: existing.createdBy.name,
+      issueCode: generateIssueCode(existing.project.code, existing.issueNumber),
+      issueTitle: existing.title,
+      issueUrl: `${BASE_URL}/issues/${issueId}`,
+      projectName: existing.project.name,
+      priority: existing.priority,
+      client: existing.client?.name,
+      department: existing.department,
+      module: existing.module,
+      dueDate: existing.dueDate,
+      solution: existing.solution,
+    }).catch((err) => console.error("[mailer] updateIssueStatus failed:", err));
+  }
 
   revalidatePath("/issues");
   revalidatePath(`/issues/${issueId}`);
@@ -334,7 +380,17 @@ export async function resolveIssue(issueId: string, solution: string) {
     if (!membership) throw new Error("Unauthorized");
   }
 
-  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { status: true, resolvedAt: true } });
+  const existing = await prisma.issue.findUnique({
+    where: { id: issueId },
+    select: {
+      status: true, resolvedAt: true,
+      title: true, issueNumber: true, priority: true,
+      department: true, module: true, dueDate: true,
+      client: { select: { name: true } },
+      project: { select: { name: true, code: true } },
+      createdBy: { select: { name: true, email: true } },
+    },
+  });
   if (!existing) throw new Error("Not found");
 
   await prisma.issue.update({
@@ -351,6 +407,23 @@ export async function resolveIssue(issueId: string, solution: string) {
   await prisma.activityLog.create({
     data: { issueId, userId: session.userId, action: "status_changed", oldValue: existing.status, newValue: "wait_for_user_check" },
   });
+
+  if (existing.createdBy.email) {
+    sendWaitForCheckEmail({
+      to: existing.createdBy.email,
+      creatorName: existing.createdBy.name,
+      issueCode: generateIssueCode(existing.project.code, existing.issueNumber),
+      issueTitle: existing.title,
+      issueUrl: `${BASE_URL}/issues/${issueId}`,
+      projectName: existing.project.name,
+      priority: existing.priority,
+      client: existing.client?.name,
+      department: existing.department,
+      module: existing.module,
+      dueDate: existing.dueDate,
+      solution,
+    }).catch((err) => console.error("[mailer] resolveIssue failed:", err));
+  }
 
   revalidatePath("/issues");
   revalidatePath(`/issues/${issueId}`);
