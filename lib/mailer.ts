@@ -16,6 +16,9 @@ async function getGroupBcc(exclude: string[]): Promise<string[]> {
 export interface ResolvedEmailPayload {
   to: string;
   creatorName: string;
+  creatorEmail: string;
+  assigneeName?: string | null;
+  assigneeEmail?: string | null;
   issueCode: string;
   issueTitle: string;
   issueUrl: string;
@@ -32,6 +35,10 @@ export interface CommentEmailPayload {
   to: string;
   recipientName: string;
   commenterName: string;
+  creatorName: string;
+  creatorEmail: string;
+  assigneeName?: string | null;
+  assigneeEmail?: string | null;
   issueCode: string;
   issueTitle: string;
   issueUrl: string;
@@ -42,6 +49,9 @@ export interface CommentEmailPayload {
 export interface WaitForCheckEmailPayload {
   to: string;
   creatorName: string;
+  creatorEmail: string;
+  assigneeName?: string | null;
+  assigneeEmail?: string | null;
   issueCode: string;
   issueTitle: string;
   issueUrl: string;
@@ -213,11 +223,13 @@ export async function sendWaitForCheckEmail(payload: WaitForCheckEmailPayload) {
         </p>
 
         <table style="border-collapse:collapse;width:100%;margin-bottom:8px;font-size:13px">
-          ${row("Issue ID",  `<strong>${payload.issueCode}</strong>`)}
-          ${row("Title",     `<strong>${payload.issueTitle}</strong>`)}
-          ${row("Project",   payload.projectName)}
-          ${row("Priority",  `<span style="color:${priorityColor};font-weight:600">${priorityLabel}</span>`)}
-          ${row("Status",    `<span style="color:#0d9488;font-weight:600">${STATUS_LABELS["wait_for_user_check"]}</span>`)}
+          ${row("Issue ID",    `<strong>${payload.issueCode}</strong>`)}
+          ${row("Title",       `<strong>${payload.issueTitle}</strong>`)}
+          ${row("Project",     payload.projectName)}
+          ${row("Priority",    `<span style="color:${priorityColor};font-weight:600">${priorityLabel}</span>`)}
+          ${row("Status",      `<span style="color:#0d9488;font-weight:600">${STATUS_LABELS["wait_for_user_check"]}</span>`)}
+          ${row("Opened By",   `${payload.creatorName} &lt;${payload.creatorEmail}&gt;`)}
+          ${payload.assigneeName && payload.assigneeEmail ? row("Assigned To", `${payload.assigneeName} &lt;${payload.assigneeEmail}&gt;`) : ""}
           ${payload.client     ? row("Client",     payload.client)     : ""}
           ${payload.department ? row("Department", payload.department) : ""}
           ${payload.module     ? row("Module",     payload.module)     : ""}
@@ -289,9 +301,11 @@ export async function sendCommentEmail(payload: CommentEmailPayload) {
         </p>
 
         <table style="border-collapse:collapse;width:100%;margin-bottom:16px;font-size:13px">
-          ${row("Issue ID", `<strong>${payload.issueCode}</strong>`)}
-          ${row("Title",    `<strong>${payload.issueTitle}</strong>`)}
-          ${row("Project",  payload.projectName)}
+          ${row("Issue ID",    `<strong>${payload.issueCode}</strong>`)}
+          ${row("Title",       `<strong>${payload.issueTitle}</strong>`)}
+          ${row("Project",     payload.projectName)}
+          ${row("Opened By",   `${payload.creatorName} &lt;${payload.creatorEmail}&gt;`)}
+          ${payload.assigneeName && payload.assigneeEmail ? row("Assigned To", `${payload.assigneeName} &lt;${payload.assigneeEmail}&gt;`) : ""}
         </table>
 
         <div style="padding:14px 16px;background:#f5f3ff;border-left:4px solid #4f46e5;border-radius:4px;font-size:13px;color:#1e1b4b;line-height:1.6">
@@ -368,11 +382,13 @@ export async function sendResolvedEmail(payload: ResolvedEmailPayload) {
         </p>
 
         <table style="border-collapse:collapse;width:100%;margin-bottom:8px;font-size:13px">
-          ${row("Issue ID",  `<strong>${payload.issueCode}</strong>`)}
-          ${row("Title",     `<strong>${payload.issueTitle}</strong>`)}
-          ${row("Project",   payload.projectName)}
-          ${row("Priority",  `<span style="color:${priorityColor};font-weight:600">${priorityLabel}</span>`)}
-          ${row("Status",    `<span style="color:#16a34a;font-weight:600">${STATUS_LABELS["resolved"]}</span>`)}
+          ${row("Issue ID",    `<strong>${payload.issueCode}</strong>`)}
+          ${row("Title",       `<strong>${payload.issueTitle}</strong>`)}
+          ${row("Project",     payload.projectName)}
+          ${row("Priority",    `<span style="color:${priorityColor};font-weight:600">${priorityLabel}</span>`)}
+          ${row("Status",      `<span style="color:#16a34a;font-weight:600">${STATUS_LABELS["resolved"]}</span>`)}
+          ${row("Opened By",   `${payload.creatorName} &lt;${payload.creatorEmail}&gt;`)}
+          ${payload.assigneeName && payload.assigneeEmail ? row("Assigned To", `${payload.assigneeName} &lt;${payload.assigneeEmail}&gt;`) : ""}
           ${payload.client     ? row("Client",     payload.client)     : ""}
           ${payload.department ? row("Department", payload.department) : ""}
           ${payload.module     ? row("Module",     payload.module)     : ""}

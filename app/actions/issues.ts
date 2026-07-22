@@ -230,6 +230,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
       client: { select: { name: true } },
       project: { select: { name: true, code: true } },
       createdBy: { select: { name: true, email: true } },
+      assignee: { select: { name: true, email: true } },
     },
   });
 
@@ -263,6 +264,9 @@ export async function updateIssue(issueId: string, formData: FormData) {
     const emailBase = {
       to: issueWithProject.createdBy.email,
       creatorName: issueWithProject.createdBy.name,
+      creatorEmail: issueWithProject.createdBy.email,
+      assigneeName: issueWithProject.assignee?.name,
+      assigneeEmail: issueWithProject.assignee?.email,
       issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
       issueTitle: title,
       issueUrl: `${BASE_URL}/issues/${issueId}`,
@@ -341,6 +345,10 @@ export async function addComment(issueId: string, formData: FormData) {
       to: recipient.email,
       recipientName: recipient.name,
       commenterName,
+      creatorName: issue.createdBy.name,
+      creatorEmail: issue.createdBy.email,
+      assigneeName: issue.assignee?.name,
+      assigneeEmail: issue.assignee?.email,
       issueCode,
       issueTitle: issue.title,
       issueUrl,
@@ -374,6 +382,7 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
       client: { select: { name: true } },
       project: { select: { name: true, code: true } },
       createdBy: { select: { name: true, email: true } },
+      assignee: { select: { name: true, email: true } },
     },
   });
   if (!existing) throw new Error("Not found");
@@ -394,6 +403,9 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
     const emailBase = {
       to: existing.createdBy.email,
       creatorName: existing.createdBy.name,
+      creatorEmail: existing.createdBy.email,
+      assigneeName: existing.assignee?.name,
+      assigneeEmail: existing.assignee?.email,
       issueCode: generateIssueCode(existing.project.code, existing.issueNumber),
       issueTitle: existing.title,
       issueUrl: `${BASE_URL}/issues/${issueId}`,
@@ -438,6 +450,7 @@ export async function resolveIssue(issueId: string, solution: string) {
       client: { select: { name: true } },
       project: { select: { name: true, code: true } },
       createdBy: { select: { name: true, email: true } },
+      assignee: { select: { name: true, email: true } },
     },
   });
   if (!existing) throw new Error("Not found");
@@ -461,6 +474,9 @@ export async function resolveIssue(issueId: string, solution: string) {
     sendWaitForCheckEmail({
       to: existing.createdBy.email,
       creatorName: existing.createdBy.name,
+      creatorEmail: existing.createdBy.email,
+      assigneeName: existing.assignee?.name,
+      assigneeEmail: existing.assignee?.email,
       issueCode: generateIssueCode(existing.project.code, existing.issueNumber),
       issueTitle: existing.title,
       issueUrl: `${BASE_URL}/issues/${issueId}`,

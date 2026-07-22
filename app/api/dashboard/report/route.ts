@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
   const projectFilterForPending = {
     projectId: baseWhere.projectId as string | { in: string[] },
-    status: { in: ["open", "in_progress", "wait_for_user_check", "reopened"] as const },
+    status: { in: ["open", "in_progress", "wait_for_user_check", "reopened"] as IssueStatus[] },
   };
 
   const [issues, statusCounts, totalAllCount, todayByStatus, pendingByStatus, todayResolvedCount] = await Promise.all([
