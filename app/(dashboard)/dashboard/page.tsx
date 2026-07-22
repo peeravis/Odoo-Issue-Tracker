@@ -9,7 +9,9 @@ import { FadeUp } from "@/components/ui/motion";
 import { AlertCircle, Clock, CheckCircle, XCircle, Bug, BarChart3, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { formatDate, generateIssueCode } from "@/lib/utils";
+import type { IssueStatus } from "@/lib/types";
 import { ProjectFilter } from "@/components/dashboard/project-filter";
+import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import { ReportExport } from "@/components/dashboard/report-export";
 import { DailyReport } from "@/components/dashboard/daily-report";
 import { StatusDonutChart } from "@/components/dashboard/status-donut-chart";
@@ -17,7 +19,7 @@ import { StatusDonutChart } from "@/components/dashboard/status-donut-chart";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ projectId?: string }>;
+  searchParams: Promise<{ projectId?: string; from?: string; to?: string }>;
 }) {
   const session = await getSession();
   if (!session) return null;
@@ -40,24 +42,48 @@ export default async function DashboardPage({
     ? { projectId: selectedProject.id }
     : { projectId: { in: allProjects.map((p) => p.id) } };
 
+  // Date range filter
+  const fromStr = sp.from ?? "";
+  const toStr = sp.to ?? "";
+  const fromDate = fromStr ? (() => { const d = new Date(fromStr); d.setHours(0, 0, 0, 0); return d; })() : null;
+  const toDate = toStr ? (() => { const d = new Date(toStr); d.setHours(23, 59, 59, 999); return d; })() : null;
+  const hasDates = !!(fromDate || toDate);
+
+  const dateRangeCond = hasDates
+    ? { createdAt: { ...(fromDate ? { gte: fromDate } : {}), ...(toDate ? { lte: toDate } : {}) } }
+    : {};
+
+  // Combined filter: project + optional date range
+  const projectDateFilter = { ...projectFilter, ...dateRangeCond };
+
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
+  // Period for the "report" card: use selected range or today
+  const reportStart = fromDate ?? todayStart;
+  const reportEnd = toDate ?? new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+  const pendingStatuses: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "reopened"];
+
   const [statusCounts, recentIssues, priorityStats, monthlyStats, overdueIssues, projectStats, assigneeStats,
-    todayNewCount, todayByStatus, pendingTotal, pendingByStatus, todayResolvedCount, totalAllCount] =
+    periodNewCount, periodByStatus, pendingTotal, pendingByStatus, periodResolvedCount, totalAllCount] =
     await Promise.all([
-      prisma.issue.groupBy({ by: ["status"], where: projectFilter, _count: true }),
+      // Status counts: respect date range
+      prisma.issue.groupBy({ by: ["status"], where: projectDateFilter, _count: true }),
+      // Recent issues: respect date range
       prisma.issue.findMany({
-        where: projectFilter,
+        where: projectDateFilter,
         orderBy: { createdAt: "desc" },
         take: 10,
         include: { project: { select: { code: true, name: true } }, client: true, assignee: true },
       }),
+      // Priority stats: respect date range
       prisma.issue.groupBy({
         by: ["priority"],
-        where: { ...projectFilter, status: { not: "closed" } },
+        where: { ...projectDateFilter, status: { not: "closed" } },
         _count: true,
       }),
+      // Monthly trend: always 6-month window regardless of range
       prisma.issue.findMany({
         where: {
           ...projectFilter,
@@ -66,6 +92,7 @@ export default async function DashboardPage({
         select: { createdAt: true },
         orderBy: { createdAt: "asc" },
       }),
+      // Overdue: current state, not date-filtered
       prisma.issue.findMany({
         where: {
           ...projectFilter,
@@ -80,27 +107,32 @@ export default async function DashboardPage({
           assignee: { select: { name: true } },
         },
       }),
+      // Open issues by project: respect date range
       prisma.issue.groupBy({
         by: ["projectId"],
-        where: { ...projectFilter, status: { notIn: ["resolved", "closed"] } },
+        where: { ...projectDateFilter, status: { notIn: ["resolved", "closed"] } },
         _count: true,
         orderBy: { _count: { projectId: "desc" } },
         take: 8,
       }),
+      // Open issues by assignee: respect date range
       prisma.issue.groupBy({
         by: ["assigneeId"],
-        where: { ...projectFilter, status: { notIn: ["resolved", "closed"] }, assigneeId: { not: null } },
+        where: { ...projectDateFilter, status: { notIn: ["resolved", "closed"] }, assigneeId: { not: null } },
         _count: true,
         orderBy: { _count: { assigneeId: "desc" } },
         take: 8,
       }),
-      // Daily report queries
-      prisma.issue.count({ where: { ...projectFilter, createdAt: { gte: todayStart } } }),
-      prisma.issue.groupBy({ by: ["status"], where: { ...projectFilter, createdAt: { gte: todayStart } }, _count: true }),
-      prisma.issue.count({ where: { ...projectFilter, status: { in: ["open", "in_progress", "wait_for_user_check", "reopened"] } } }),
-      prisma.issue.groupBy({ by: ["status"], where: { ...projectFilter, status: { in: ["open", "in_progress", "wait_for_user_check", "reopened"] } }, _count: true }),
-      prisma.issue.count({ where: { ...projectFilter, resolvedAt: { gte: todayStart } } }),
-      prisma.issue.count({ where: projectFilter }),
+      // Period report: issues opened in selected period (or today)
+      prisma.issue.count({ where: { ...projectFilter, createdAt: { gte: reportStart, lte: reportEnd } } }),
+      prisma.issue.groupBy({ by: ["status"], where: { ...projectFilter, createdAt: { gte: reportStart, lte: reportEnd } }, _count: true }),
+      // Pending: always current state
+      prisma.issue.count({ where: { ...projectFilter, status: { in: pendingStatuses } } }),
+      prisma.issue.groupBy({ by: ["status"], where: { ...projectFilter, status: { in: pendingStatuses } }, _count: true }),
+      // Resolved in period
+      prisma.issue.count({ where: { ...projectFilter, resolvedAt: { gte: reportStart, lte: reportEnd } } }),
+      // Total issues: scoped to date range if active, else all
+      prisma.issue.count({ where: projectDateFilter }),
     ]);
 
   const getStatusCount = (s: string) => statusCounts.find((x) => x.status === s)?._count ?? 0;
@@ -152,32 +184,44 @@ export default async function DashboardPage({
 
   const issuesHref = selectedProject ? `/issues?projectId=${selectedProject.id}` : "/issues";
 
+  // Date label for DailyReport header
+  const dateLabel = hasDates
+    ? [
+        fromDate?.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" }),
+        toDate?.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" }),
+      ].filter(Boolean).join(" — ")
+    : new Date().toLocaleDateString("th-TH", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
   return (
     <div className="space-y-6">
       <FadeUp>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Dashboard</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {selectedProject ? selectedProject.name : "ภาพรวมทุก Project"}
-            </p>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Dashboard</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {selectedProject ? selectedProject.name : "ภาพรวมทุก Project"}
+              </p>
+            </div>
+            <ProjectFilter projects={allProjects} selectedId={sp.projectId} from={fromStr} to={toStr} />
           </div>
-
-          <ProjectFilter projects={allProjects} selectedId={sp.projectId} />
+          <DateRangeFilter from={fromStr} to={toStr} projectId={sp.projectId} />
         </div>
       </FadeUp>
 
-      {/* Daily Report */}
+      {/* Period Report */}
       <FadeUp delay={0.04}>
         <DailyReport
-          todayNewCount={todayNewCount}
-          todayByStatus={todayByStatus}
+          todayNewCount={periodNewCount}
+          todayByStatus={periodByStatus}
           pendingTotal={pendingTotal}
           pendingByStatus={pendingByStatus}
-          todayResolvedCount={todayResolvedCount}
+          todayResolvedCount={periodResolvedCount}
           totalIssues={totalAllCount}
           projectId={sp.projectId}
-          dateLabel={new Date().toLocaleDateString("th-TH", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          dateLabel={dateLabel}
+          from={fromStr}
+          to={toStr}
         />
       </FadeUp>
 

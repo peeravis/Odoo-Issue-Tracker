@@ -119,12 +119,12 @@ export default async function IssueDetailPage({
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
-        <div className="col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           {isEditing ? (
             /* Edit Form */
-            <form action={updateAction} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+            <form action={updateAction} className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 p-6 shadow-sm space-y-4">
               <h2 className="font-semibold text-gray-900 dark:text-white">Edit Issue</h2>
 
               <div>
@@ -132,7 +132,7 @@ export default async function IssueDetailPage({
                 <input name="title" defaultValue={issue.title} required className="input-base w-full" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client</label>
                   <SearchableSelect
@@ -303,7 +303,7 @@ export default async function IssueDetailPage({
             </form>
           ) : (
             /* View Mode */
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 p-6 shadow-sm space-y-4">
               <div>
                 <h2 className="font-semibold text-gray-900 dark:text-white mb-2">Description</h2>
                 <div className="text-sm text-gray-700 dark:text-gray-300">
@@ -345,7 +345,7 @@ export default async function IssueDetailPage({
           )}
 
           {/* Comments */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 shadow-sm">
             <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-indigo-400" />
               <h2 className="font-semibold text-gray-900 dark:text-white">
@@ -405,7 +405,7 @@ export default async function IssueDetailPage({
           </div>
 
           {/* Attachments */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 shadow-sm">
             <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
               <Paperclip className="h-4 w-4 text-gray-400" />
               <h2 className="font-semibold text-gray-900 dark:text-white">
@@ -428,14 +428,14 @@ export default async function IssueDetailPage({
                 />
                 <button type="submit" className="btn-primary flex-shrink-0">Upload</button>
               </form>
-              <p className="text-xs text-gray-400 mt-1">สูงสุด 10 MB ต่อไฟล์</p>
+              <p className="text-xs text-gray-400 mt-1">สูงสุด 5 MB ต่อไฟล์</p>
             </div>
           </div>
         </div>
 
         {/* Sidebar info */}
         <div className="space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
+          <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 p-5 shadow-sm space-y-3">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Details</h3>
 
             <DetailRow label="Project" value={issue.project.name} href={`/issues?projectId=${issue.projectId}`} />
@@ -464,7 +464,7 @@ export default async function IssueDetailPage({
           </div>
 
           {/* Activity Log */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="h-4 w-4 text-indigo-400" />
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Activity</h3>

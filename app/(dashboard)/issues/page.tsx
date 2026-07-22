@@ -148,11 +148,12 @@ export default async function IssuesPage({
 
       {totalPages > 1 && (
         <FadeUp delay={0.15}>
-          <div className="flex items-center justify-between px-1">
-            <p className="text-sm text-gray-400">
-              หน้า {page} จาก {totalPages} · แสดง {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} จาก {totalCount} รายการ
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1">
+            <p className="text-sm text-gray-400 order-2 sm:order-1">
+              หน้า {page} จาก {totalPages}
+              <span className="hidden sm:inline"> · แสดง {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} จาก {totalCount} รายการ</span>
             </p>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 order-1 sm:order-2">
               <Link
                 href={pageUrl(page - 1)}
                 className={`p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${page <= 1 ? "pointer-events-none opacity-30" : ""}`}

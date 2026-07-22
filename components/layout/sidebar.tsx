@@ -12,6 +12,7 @@ import {
   Database,
   KeyRound,
   Settings2,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/actions/auth";
@@ -25,6 +26,8 @@ interface SidebarProps {
   appName?: string;
   logoUrl?: string;
   permissions: RolePermissions;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 export function Sidebar({
@@ -33,6 +36,8 @@ export function Sidebar({
   appName = "Issue Tracker",
   logoUrl,
   permissions,
+  mobileOpen = false,
+  onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
@@ -53,7 +58,10 @@ export function Sidebar({
   ];
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-gray-950 flex flex-col border-r border-white/5">
+    <aside className={cn(
+      "fixed inset-y-0 left-0 z-50 w-64 bg-gray-950 flex flex-col border-r border-white/5 transition-transform duration-300 ease-in-out",
+      mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+    )}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5">
         <div className="h-8 w-8 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0 overflow-hidden">
@@ -64,10 +72,19 @@ export function Sidebar({
             <Bug className="h-4.5 w-4.5 text-white" />
           )}
         </div>
-        <div>
-          <p className="text-sm font-semibold text-white leading-none">{appName}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-white leading-none truncate">{appName}</p>
           <p className="text-xs text-gray-500 mt-0.5">Project Management</p>
         </div>
+        {onMobileClose && (
+          <button
+            onClick={onMobileClose}
+            className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
+            aria-label="ปิดเมนู"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Divider */}

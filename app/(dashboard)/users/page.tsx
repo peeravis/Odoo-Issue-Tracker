@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getPermissions } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
 import { FadeUp } from "@/components/ui/motion";
-import { CheckCircle, XCircle, Download } from "lucide-react";
+import { CheckCircle, XCircle, Download, Users } from "lucide-react";
 import { CreateUserDialog } from "@/components/users/create-user-dialog";
 import { ImportUsersButton } from "@/components/users/import-users-button";
 import { EditUserDialog } from "@/components/users/edit-user-dialog";
@@ -119,7 +119,8 @@ export default async function UsersPage({
 
       <FadeUp delay={0.08}>
         <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="bg-gray-50/80 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700/60">
                 <th className="px-5 py-3 text-left font-medium text-gray-500 dark:text-gray-400">ชื่อ / Email</th>
@@ -206,13 +207,20 @@ export default async function UsersPage({
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-400">
-                    ไม่พบ user ที่ค้นหา
+                  <td colSpan={5} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center mb-1">
+                        <Users className="h-6 w-6 text-gray-300 dark:text-gray-600" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-400">ไม่พบ user ที่ค้นหา</p>
+                      <p className="text-xs text-gray-300 dark:text-gray-600">ลองเปลี่ยนคำค้นหาหรือ role filter</p>
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </FadeUp>
     </div>

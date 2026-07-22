@@ -58,19 +58,20 @@ export default async function ConfigPage({
 
       <FadeUp delay={0.03}>
         {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 w-fit">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 overflow-x-auto">
           {TABS.map(({ key, label, icon: Icon }) => (
             <Link
               key={key}
               href={`/config?tab=${key}`}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
                 tab === key
                   ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
-              {label}
+              <span className="hidden sm:inline">{label}</span>
+              <span className="sm:hidden">{label.split(" ")[0]}</span>
             </Link>
           ))}
         </div>
@@ -136,7 +137,7 @@ export default async function ConfigPage({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="SMTP Host" name="email.smtpHost" defaultValue={cfg["email.smtpHost"]} placeholder="smtp.gmail.com" />
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Port" name="email.smtpPort" defaultValue={cfg["email.smtpPort"]} placeholder="587" />
@@ -175,7 +176,7 @@ export default async function ConfigPage({
         {tab === "issues" && (
           <Section title="Issue Defaults" description="ค่า default ที่ใช้เมื่อสร้าง issue ใหม่">
             <form action={saveIssueDefaults} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Default Priority</label>
                   <select name="issue.defaultPriority" defaultValue={cfg["issue.defaultPriority"]} className="input-base w-full">

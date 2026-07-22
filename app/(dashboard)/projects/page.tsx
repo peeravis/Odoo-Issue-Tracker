@@ -2,7 +2,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { getPermissions } from "@/lib/permissions";
-import { FolderKanban, Settings, ArrowLeft, Layers } from "lucide-react";
+import { FolderKanban, Settings, ArrowLeft, Layers, FolderOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { FadeUp, StaggerList, StaggerItem } from "@/components/ui/motion";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
@@ -195,15 +195,28 @@ export default async function ProjectsPage({
           )}
 
           {allGroups.length === 0 && projects.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              {statusFilter === "closed" ? "ไม่มีโปรเจกต์ที่ปิดแล้ว" : "ยังไม่มีโปรเจกต์"}
+            <div className="flex flex-col items-center gap-2 py-20 text-center">
+              <div className="h-14 w-14 rounded-full bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center mb-2">
+                <FolderOpen className="h-7 w-7 text-gray-300 dark:text-gray-600" />
+              </div>
+              <p className="text-sm font-medium text-gray-400">
+                {statusFilter === "closed" ? "ไม่มีโปรเจกต์ที่ปิดแล้ว" : "ยังไม่มีโปรเจกต์"}
+              </p>
+              {statusFilter === "active" && isAdmin && (
+                <p className="text-xs text-gray-300 dark:text-gray-600">กด &quot;Create Group&quot; เพื่อเริ่มต้น</p>
+              )}
             </div>
           )}
         </div>
       ) : (
         /* Projects in selected group */
         projects.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">ไม่มีโปรเจกต์ในกลุ่มนี้</div>
+          <div className="flex flex-col items-center gap-2 py-20 text-center">
+            <div className="h-14 w-14 rounded-full bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center mb-2">
+              <FolderOpen className="h-7 w-7 text-gray-300 dark:text-gray-600" />
+            </div>
+            <p className="text-sm font-medium text-gray-400">ไม่มีโปรเจกต์ในกลุ่มนี้</p>
+          </div>
         ) : (
           <ProjectGrid projects={projects as ProjectItem[]} isAdmin={isAdmin} />
         )

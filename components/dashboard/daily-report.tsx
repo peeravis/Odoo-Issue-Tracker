@@ -25,6 +25,8 @@ interface DailyReportProps {
   totalIssues: number;
   projectId?: string;
   dateLabel: string;
+  from?: string;
+  to?: string;
 }
 
 export function DailyReport({
@@ -36,16 +38,21 @@ export function DailyReport({
   totalIssues,
   projectId,
   dateLabel,
+  from,
+  to,
 }: DailyReportProps) {
   const [loading, setLoading] = useState(false);
+  const isRange = !!(from || to);
 
   const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
 
-  const handleExportToday = async () => {
+  const handleExport = async () => {
     setLoading(true);
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const params = new URLSearchParams({ from: today, to: today, daily: "1" });
+      const exportFrom = from || today;
+      const exportTo = to || today;
+      const params = new URLSearchParams({ from: exportFrom, to: exportTo, daily: "1" });
       if (projectId) params.set("projectId", projectId);
       const res = await fetch(`/api/dashboard/report?${params}`);
       if (!res.ok) throw new Error("Export failed");
@@ -53,7 +60,7 @@ export function DailyReport({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `daily-report_${today}.xlsx`;
+      a.download = `report_${exportFrom}${exportFrom !== exportTo ? `_to_${exportTo}` : ""}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -69,17 +76,19 @@ export function DailyReport({
         <div>
           <div className="flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-indigo-500" />
-            <h2 className="font-semibold text-gray-900 dark:text-white text-sm">Daily Report</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white text-sm">
+              {isRange ? "Period Report" : "Daily Report"}
+            </h2>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{dateLabel}</p>
         </div>
         <button
-          onClick={handleExportToday}
+          onClick={handleExport}
           disabled={loading}
           className="btn-primary flex items-center gap-2 text-sm px-4 py-2 self-start sm:self-auto disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-          Export วันนี้
+          {isRange ? "Export ช่วงนี้" : "Export วันนี้"}
         </button>
       </div>
 
@@ -87,7 +96,7 @@ export function DailyReport({
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           {
-            label: "เปิดวันนี้",
+            label: isRange ? "เปิดในช่วงนี้" : "เปิดวันนี้",
             value: todayNewCount,
             sub: `${pct(todayNewCount, totalIssues)}% ของทั้งหมด`,
             color: "text-blue-600 dark:text-blue-400",
@@ -101,7 +110,7 @@ export function DailyReport({
             bg: "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/30",
           },
           {
-            label: "Resolve วันนี้",
+            label: isRange ? "Resolve ในช่วงนี้" : "Resolve วันนี้",
             value: todayResolvedCount,
             sub: `${pct(todayResolvedCount, totalIssues)}% ของทั้งหมด`,
             color: "text-emerald-600 dark:text-emerald-400",
@@ -121,7 +130,7 @@ export function DailyReport({
         {/* Today opened by status */}
         <div>
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-            เคสที่เปิดวันนี้
+            {isRange ? "เคสที่เปิดในช่วงนี้" : "เคสที่เปิดวันนี้"}
           </p>
           {todayNewCount > 0 ? (
             <>

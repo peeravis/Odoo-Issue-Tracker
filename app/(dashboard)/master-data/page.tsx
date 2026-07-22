@@ -127,20 +127,20 @@ export default async function MasterDataPage() {
           </div>
 
           {/* Add form */}
-          <form action={upsertClient} className="flex gap-3 items-end mb-5">
-            <div className="flex-1">
+          <form action={upsertClient} className="grid grid-cols-1 sm:grid-cols-[1fr_8rem_1fr_auto] gap-3 items-end mb-5">
+            <div>
               <label className="block text-xs text-gray-500 mb-1">ชื่อ Client *</label>
               <input name="name" placeholder="ชื่อลูกค้า / บริษัท" required className="input-base w-full" />
             </div>
-            <div className="w-32">
+            <div>
               <label className="block text-xs text-gray-500 mb-1">Code</label>
               <input name="code" placeholder="รหัส" className="input-base w-full" />
             </div>
-            <div className="flex-1">
+            <div>
               <label className="block text-xs text-gray-500 mb-1">Contact</label>
               <input name="contactInfo" placeholder="ติดต่อ / email / เบอร์" className="input-base w-full" />
             </div>
-            <button type="submit" className="btn-primary flex items-center gap-2 flex-shrink-0">
+            <button type="submit" className="btn-primary flex items-center gap-2">
               <Plus className="h-4 w-4" /> Add
             </button>
           </form>
@@ -153,7 +153,8 @@ export default async function MasterDataPage() {
 
           {/* Table */}
           <div className="rounded-xl border border-gray-100 dark:border-gray-700/50 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="bg-gray-50/80 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700/60">
                   <th className="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">Name</th>
@@ -184,6 +185,7 @@ export default async function MasterDataPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </FadeUp>
