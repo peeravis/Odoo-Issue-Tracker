@@ -2,6 +2,17 @@ import nodemailer from "nodemailer";
 import { getConfigs } from "./config";
 import { PRIORITY_LABELS, STATUS_LABELS } from "./utils";
 
+export interface CommentEmailPayload {
+  to: string;
+  recipientName: string;
+  commenterName: string;
+  issueCode: string;
+  issueTitle: string;
+  issueUrl: string;
+  projectName: string;
+  commentContent: string;
+}
+
 export interface WaitForCheckEmailPayload {
   to: string;
   creatorName: string;
@@ -201,6 +212,76 @@ export async function sendWaitForCheckEmail(payload: WaitForCheckEmailPayload) {
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
     to: payload.to,
     subject: `[${payload.issueCode}] รอการตรวจสอบ — ${payload.issueTitle}`,
+    html,
+  });
+}
+
+export async function sendCommentEmail(payload: CommentEmailPayload) {
+  const cfg = await getConfigs([
+    "email.enabled", "email.smtpHost", "email.smtpPort",
+    "email.smtpSecure", "email.smtpUser", "email.smtpPass",
+    "email.fromName", "email.fromEmail",
+  ]);
+
+  if (cfg["email.enabled"] !== "true") return;
+  if (!cfg["email.smtpHost"]) return;
+
+  const transporter = nodemailer.createTransport({
+    host: cfg["email.smtpHost"],
+    port: Number(cfg["email.smtpPort"] || 587),
+    secure: cfg["email.smtpSecure"] === "true",
+    auth: cfg["email.smtpUser"]
+      ? { user: cfg["email.smtpUser"], pass: cfg["email.smtpPass"] }
+      : undefined,
+  });
+
+  const commentHtml = payload.commentContent
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:620px;margin:0 auto;color:#111827">
+      <div style="background:#4f46e5;padding:24px 32px;border-radius:12px 12px 0 0">
+        <h2 style="margin:0;color:#fff;font-size:18px">New Comment</h2>
+        <p style="margin:4px 0 0;color:#c7d2fe;font-size:13px">${payload.issueCode} · ${payload.projectName}</p>
+      </div>
+
+      <div style="padding:24px 32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+        <p style="margin:0 0 16px">Hi <strong>${payload.recipientName}</strong>,</p>
+        <p style="margin:0 0 16px;color:#6b7280">
+          <strong style="color:#111827">${payload.commenterName}</strong>
+          ได้แสดงความคิดเห็นใน issue ของคุณ
+        </p>
+
+        <table style="border-collapse:collapse;width:100%;margin-bottom:16px;font-size:13px">
+          ${row("Issue ID", `<strong>${payload.issueCode}</strong>`)}
+          ${row("Title",    `<strong>${payload.issueTitle}</strong>`)}
+          ${row("Project",  payload.projectName)}
+        </table>
+
+        <div style="padding:14px 16px;background:#f5f3ff;border-left:4px solid #4f46e5;border-radius:4px;font-size:13px;color:#1e1b4b;line-height:1.6">
+          ${commentHtml}
+        </div>
+
+        <div style="margin-top:24px">
+          <a href="${payload.issueUrl}"
+             style="display:inline-block;padding:10px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">
+            ดู Issue →
+          </a>
+        </div>
+
+        <p style="margin-top:28px;color:#9ca3af;font-size:11px;border-top:1px solid #f3f4f6;padding-top:16px">
+          Issue Tracker · This is an automated notification
+        </p>
+      </div>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
+    to: payload.to,
+    subject: `[${payload.issueCode}] New Comment — ${payload.issueTitle}`,
     html,
   });
 }

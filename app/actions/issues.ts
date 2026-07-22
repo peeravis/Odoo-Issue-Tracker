@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { canViewAllProjects, generateIssueCode } from "@/lib/utils";
 import { getPermissions } from "@/lib/permissions";
-import { sendAssignmentEmail, sendWaitForCheckEmail } from "@/lib/mailer";
+import { sendAssignmentEmail, sendWaitForCheckEmail, sendCommentEmail } from "@/lib/mailer";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
 import { UPLOAD_DIR, MAX_FILE_SIZE, BASE_URL } from "@/lib/constants";
 
@@ -282,10 +282,19 @@ export async function addComment(issueId: string, formData: FormData) {
   const content = formData.get("content") as string;
   if (!content?.trim()) return;
 
+  const issue = await prisma.issue.findUnique({
+    where: { id: issueId },
+    select: {
+      projectId: true, title: true, issueNumber: true,
+      createdBy: { select: { id: true, name: true, email: true } },
+      assignee:  { select: { id: true, name: true, email: true } },
+      project:   { select: { name: true, code: true } },
+    },
+  });
+  if (!issue) throw new Error("Issue not found");
+
   const commentPerms = await getPermissions(session.role);
   if (!commentPerms.canViewAllProjects) {
-    const issue = await prisma.issue.findUnique({ where: { id: issueId }, select: { projectId: true } });
-    if (!issue) throw new Error("Issue not found");
     const membership = await prisma.projectMember.findUnique({
       where: { projectId_userId: { projectId: issue.projectId, userId: session.userId } },
     });
@@ -304,6 +313,33 @@ export async function addComment(issueId: string, formData: FormData) {
     where: { id: issueId },
     data: { lastModifiedAt: new Date(), modifiedById: session.userId },
   });
+
+  // Notify creator and assignee (skip the commenter themselves)
+  const issueCode = generateIssueCode(issue.project.code, issue.issueNumber);
+  const issueUrl  = `${BASE_URL}/issues/${issueId}`;
+  const commenter = await prisma.user.findUnique({ where: { id: session.userId }, select: { name: true } });
+  const commenterName = commenter?.name ?? "Someone";
+
+  const recipients = [issue.createdBy, issue.assignee].filter(
+    (u): u is { id: string; name: string; email: string } =>
+      u !== null && u.email !== null && u.id !== session.userId
+  );
+  // Deduplicate in case creator === assignee
+  const seen = new Set<string>();
+  for (const recipient of recipients) {
+    if (seen.has(recipient.id)) continue;
+    seen.add(recipient.id);
+    sendCommentEmail({
+      to: recipient.email,
+      recipientName: recipient.name,
+      commenterName,
+      issueCode,
+      issueTitle: issue.title,
+      issueUrl,
+      projectName: issue.project.name,
+      commentContent: content,
+    }).catch((err) => console.error("[mailer] addComment failed:", err));
+  }
 
   revalidatePath(`/issues/${issueId}`);
 }
