@@ -267,6 +267,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: Issu
                             <td className="px-4 py-3 hidden lg:table-cell text-xs">
                               <AssigneeDropdown
                                 issueId={issue.id}
+                                issueCode={generateIssueCode(issue.project.code, issue.issueNumber)}
                                 assigneeId={issue.assignee?.id ?? null}
                                 assigneeName={issue.assignee?.name ?? null}
                                 users={users}
