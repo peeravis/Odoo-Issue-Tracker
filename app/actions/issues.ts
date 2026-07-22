@@ -100,19 +100,26 @@ export async function createIssue(formData: FormData) {
 
   // Send assignment email if assignee set
   if (assigneeId) {
-    const [assignee, project] = await Promise.all([
+    const [assignee, project, client] = await Promise.all([
       prisma.user.findUnique({ where: { id: assigneeId }, select: { name: true, email: true } }),
       prisma.project.findUnique({ where: { id: projectId }, select: { name: true, code: true } }),
+      clientId ? prisma.client.findUnique({ where: { id: clientId }, select: { name: true } }) : null,
     ]);
     if (assignee?.email && project) {
-      const baseUrl = BASE_URL;
       sendAssignmentEmail({
         to: assignee.email,
         assigneeName: assignee.name,
         issueTitle: title,
         issueCode: generateIssueCode(project.code, issueNumber),
-        issueUrl: `${baseUrl}/issues/${issue.id}`,
+        issueUrl: `${BASE_URL}/issues/${issue.id}`,
         projectName: project.name,
+        priority,
+        status,
+        client: client?.name,
+        department,
+        module,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        description,
       }).catch((err) => console.error("[mailer] createIssue failed:", err));
     }
   }
@@ -220,18 +227,28 @@ export async function updateIssue(issueId: string, formData: FormData) {
       prisma.user.findUnique({ where: { id: newAssigneeId }, select: { name: true, email: true } }),
       prisma.issue.findUnique({
         where: { id: issueId },
-        select: { issueNumber: true, project: { select: { name: true, code: true } } },
+        select: {
+          issueNumber: true,
+          client: { select: { name: true } },
+          project: { select: { name: true, code: true } },
+        },
       }),
     ]);
     if (assignee?.email && issueWithProject) {
-      const baseUrl = BASE_URL;
       sendAssignmentEmail({
         to: assignee.email,
         assigneeName: assignee.name,
         issueTitle: title,
         issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
-        issueUrl: `${baseUrl}/issues/${issueId}`,
+        issueUrl: `${BASE_URL}/issues/${issueId}`,
         projectName: issueWithProject.project.name,
+        priority,
+        status,
+        client: issueWithProject.client?.name,
+        department,
+        module,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        description,
       }).catch((err) => console.error("[mailer] updateIssue failed:", err));
     }
   }
@@ -380,7 +397,12 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
     assigneeId ? prisma.user.findUnique({ where: { id: assigneeId }, select: { name: true, email: true } }) : null,
     prisma.issue.findUnique({
       where: { id: issueId },
-      select: { title: true, issueNumber: true, project: { select: { name: true, code: true } } },
+      select: {
+        title: true, issueNumber: true, priority: true, status: true,
+        department: true, module: true, description: true, dueDate: true,
+        client: { select: { name: true } },
+        project: { select: { name: true, code: true } },
+      },
     }),
   ]);
 
@@ -393,7 +415,6 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
   });
 
   if (assigneeId && assigneeId !== existing.assigneeId && newAssignee?.email && issueWithProject) {
-    const baseUrl = BASE_URL;
     sendAssignmentEmail({
       to: newAssignee.email,
       assigneeName: newAssignee.name,
@@ -401,6 +422,13 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
       issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
       issueUrl: `${BASE_URL}/issues/${issueId}`,
       projectName: issueWithProject.project.name,
+      priority: issueWithProject.priority,
+      status: issueWithProject.status,
+      client: issueWithProject.client?.name,
+      department: issueWithProject.department,
+      module: issueWithProject.module,
+      dueDate: issueWithProject.dueDate,
+      description: issueWithProject.description,
     }).catch((err) => console.error("[mailer] updateIssueAssignee failed:", err));
   }
 

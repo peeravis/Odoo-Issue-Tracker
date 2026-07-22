@@ -1,30 +1,42 @@
 import nodemailer from "nodemailer";
 import { getConfigs } from "./config";
+import { PRIORITY_LABELS, STATUS_LABELS } from "./utils";
 
-export async function sendAssignmentEmail({
-  to,
-  assigneeName,
-  issueTitle,
-  issueCode,
-  issueUrl,
-  projectName,
-}: {
+export interface AssignmentEmailPayload {
   to: string;
   assigneeName: string;
-  issueTitle: string;
   issueCode: string;
+  issueTitle: string;
   issueUrl: string;
   projectName: string;
-}) {
+  priority: string;
+  status: string;
+  client?: string | null;
+  department?: string | null;
+  module?: string | null;
+  dueDate?: Date | null;
+  description?: string | null;
+}
+
+const PRIORITY_COLOR: Record<string, string> = {
+  high:   "#dc2626",
+  medium: "#d97706",
+  low:    "#6b7280",
+};
+
+function row(label: string, value: string) {
+  return `
+    <tr>
+      <td style="padding:8px 12px;border:1px solid #e5e7eb;color:#6b7280;white-space:nowrap;width:130px">${label}</td>
+      <td style="padding:8px 12px;border:1px solid #e5e7eb;color:#111827">${value}</td>
+    </tr>`;
+}
+
+export async function sendAssignmentEmail(payload: AssignmentEmailPayload) {
   const cfg = await getConfigs([
-    "email.enabled",
-    "email.smtpHost",
-    "email.smtpPort",
-    "email.smtpSecure",
-    "email.smtpUser",
-    "email.smtpPass",
-    "email.fromName",
-    "email.fromEmail",
+    "email.enabled", "email.smtpHost", "email.smtpPort",
+    "email.smtpSecure", "email.smtpUser", "email.smtpPass",
+    "email.fromName", "email.fromEmail",
   ]);
 
   if (cfg["email.enabled"] !== "true") return;
@@ -39,34 +51,60 @@ export async function sendAssignmentEmail({
       : undefined,
   });
 
+  const priorityLabel = PRIORITY_LABELS[payload.priority as keyof typeof PRIORITY_LABELS] ?? payload.priority;
+  const statusLabel   = STATUS_LABELS[payload.status as keyof typeof STATUS_LABELS] ?? payload.status;
+  const priorityColor = PRIORITY_COLOR[payload.priority] ?? "#6b7280";
+  const dueDateStr    = payload.dueDate
+    ? new Date(payload.dueDate).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" })
+    : null;
+
+  const descriptionHtml = payload.description
+    ? `<div style="margin-top:16px;padding:12px;background:#f9fafb;border-left:3px solid #4f46e5;border-radius:4px;font-size:13px;color:#374151;white-space:pre-wrap">${payload.description.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`
+    : "";
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:620px;margin:0 auto;color:#111827">
+      <div style="background:#4f46e5;padding:24px 32px;border-radius:12px 12px 0 0">
+        <h2 style="margin:0;color:#fff;font-size:18px">Issue Assigned to You</h2>
+        <p style="margin:4px 0 0;color:#c7d2fe;font-size:13px">${payload.issueCode} · ${payload.projectName}</p>
+      </div>
+
+      <div style="padding:24px 32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+        <p style="margin:0 0 16px">Hi <strong>${payload.assigneeName}</strong>,</p>
+        <p style="margin:0 0 16px;color:#6b7280">คุณได้รับมอบหมาย issue ใน <strong style="color:#111827">${payload.projectName}</strong></p>
+
+        <table style="border-collapse:collapse;width:100%;margin-bottom:8px;font-size:13px">
+          ${row("Issue ID", `<strong>${payload.issueCode}</strong>`)}
+          ${row("Title", `<strong>${payload.issueTitle}</strong>`)}
+          ${row("Project", payload.projectName)}
+          ${row("Priority", `<span style="color:${priorityColor};font-weight:600">${priorityLabel}</span>`)}
+          ${row("Status", statusLabel)}
+          ${payload.client     ? row("Client",     payload.client)     : ""}
+          ${payload.department ? row("Department", payload.department) : ""}
+          ${payload.module     ? row("Module",     payload.module)     : ""}
+          ${dueDateStr         ? row("Due Date",   `<span style="color:#dc2626">${dueDateStr}</span>`) : ""}
+        </table>
+
+        ${descriptionHtml}
+
+        <div style="margin-top:24px">
+          <a href="${payload.issueUrl}"
+             style="display:inline-block;padding:10px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">
+            View Issue →
+          </a>
+        </div>
+
+        <p style="margin-top:28px;color:#9ca3af;font-size:11px;border-top:1px solid #f3f4f6;padding-top:16px">
+          Issue Tracker · This is an automated notification
+        </p>
+      </div>
+    </div>
+  `;
+
   await transporter.sendMail({
     from: `"${cfg["email.fromName"]}" <${cfg["email.fromEmail"]}>`,
-    to,
-    subject: `[${issueCode}] You have been assigned an issue — ${issueTitle}`,
-    html: `
-      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-        <h2 style="color:#4f46e5">Issue Assigned to You</h2>
-        <p>Hi <strong>${assigneeName}</strong>,</p>
-        <p>You have been assigned to the following issue in <strong>${projectName}</strong>:</p>
-        <table style="border-collapse:collapse;width:100%;margin:16px 0">
-          <tr>
-            <td style="padding:8px;border:1px solid #e5e7eb;color:#6b7280;width:120px">Issue</td>
-            <td style="padding:8px;border:1px solid #e5e7eb"><strong>${issueCode}</strong></td>
-          </tr>
-          <tr>
-            <td style="padding:8px;border:1px solid #e5e7eb;color:#6b7280">Title</td>
-            <td style="padding:8px;border:1px solid #e5e7eb">${issueTitle}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px;border:1px solid #e5e7eb;color:#6b7280">Project</td>
-            <td style="padding:8px;border:1px solid #e5e7eb">${projectName}</td>
-          </tr>
-        </table>
-        <a href="${issueUrl}" style="display:inline-block;padding:10px 20px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px">
-          View Issue →
-        </a>
-        <p style="margin-top:24px;color:#9ca3af;font-size:12px">Issue Tracker · This is an automated notification</p>
-      </div>
-    `,
+    to: payload.to,
+    subject: `[${payload.issueCode}] You have been assigned — ${payload.issueTitle}`,
+    html,
   });
 }
