@@ -22,11 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         userName={session.name}
         appName={cfg["app.name"]}
         logoUrl={cfg["app.logoUrl"]}
-        canAccessDashboard={perms.canAccessDashboard}
-        canManageMasterData={perms.canManageMasterData}
-        canManageUsers={perms.canManageUsers}
-        canAccessConfig={perms.canAccessConfig}
-        canManageProjects={perms.canManageProjects}
+        permissions={perms}
       />
       <div className="pl-64">
         <header className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-700/80 px-6 py-3 flex items-center justify-between">

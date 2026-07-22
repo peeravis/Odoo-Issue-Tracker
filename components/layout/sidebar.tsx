@@ -17,17 +17,14 @@ import { cn } from "@/lib/utils";
 import { logout } from "@/app/actions/auth";
 import { useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { RolePermissions } from "@/lib/permissions";
 
 interface SidebarProps {
   userRole: string;
   userName: string;
   appName?: string;
   logoUrl?: string;
-  canAccessDashboard?: boolean;
-  canManageMasterData?: boolean;
-  canManageUsers?: boolean;
-  canAccessConfig?: boolean;
-  canManageProjects?: boolean;
+  permissions: RolePermissions;
 }
 
 export function Sidebar({
@@ -35,10 +32,7 @@ export function Sidebar({
   userName,
   appName = "Issue Tracker",
   logoUrl,
-  canAccessDashboard = false,
-  canManageMasterData = false,
-  canManageUsers = false,
-  canAccessConfig = false,
+  permissions,
 }: SidebarProps) {
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
@@ -50,12 +44,12 @@ export function Sidebar({
   };
 
   const allItems = [
-    ...(canAccessDashboard ? [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : []),
+    ...(permissions.canAccessDashboard ? [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : []),
     { href: "/projects", label: "Projects", icon: FolderKanban },
     { href: "/issues", label: "Issues", icon: Bug },
-    ...(canManageMasterData ? [{ href: "/master-data", label: "Master Data", icon: Database }] : []),
-    ...(canManageUsers ? [{ href: "/users", label: "Users", icon: Users }] : []),
-    ...(canAccessConfig ? [{ href: "/config", label: "Config", icon: Settings2 }] : []),
+    ...(permissions.canManageMasterData ? [{ href: "/master-data", label: "Master Data", icon: Database }] : []),
+    ...(permissions.canManageUsers ? [{ href: "/users", label: "Users", icon: Users }] : []),
+    ...(permissions.canAccessConfig ? [{ href: "/config", label: "Config", icon: Settings2 }] : []),
   ];
 
   return (

@@ -2,6 +2,8 @@ import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { getConfig } from "./config";
+import { UnauthorizedError } from "./errors";
+import { SESSION_DEFAULT_EXPIRY } from "./constants";
 
 export type SessionPayload = {
   userId: string;
@@ -19,7 +21,7 @@ export async function encrypt(payload: SessionPayload) {
   return new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(SESSION_DEFAULT_EXPIRY)
     .sign(encodedKey);
 }
 
@@ -67,4 +69,10 @@ export async function getSession(): Promise<SessionPayload | null> {
 export async function deleteSession() {
   const cookieStore = await cookies();
   cookieStore.delete("session");
+}
+
+export async function requireSession(): Promise<SessionPayload> {
+  const session = await getSession();
+  if (!session) throw new UnauthorizedError();
+  return session;
 }

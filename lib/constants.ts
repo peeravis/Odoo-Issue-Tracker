@@ -15,3 +15,12 @@ export const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2 MB
 // Roles
 export const SYSTEM_ROLES = ["admin", "pm", "member", "rnao", "co", "gl"] as const;
 export const ASSIGNEE_ROLES = ["vendor", "aspd"] as const;
+
+// UI limits
+export const MAX_DROPDOWN_OPTIONS = 50;
+
+// Import
+export const IMPORT_HEADER_ROWS = 2;
+
+// Session
+export const SESSION_DEFAULT_EXPIRY = "7d";

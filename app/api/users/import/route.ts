@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/session";
+import { IMPORT_HEADER_ROWS } from "@/lib/constants";
 
 const BCRYPT_ROUNDS = 10;
 const HASH_CONCURRENCY = 8;
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
   const validRoles = ["admin", "pm", "member", "rnao", "co", "gl"];
   const rows: Row[] = [];
   sheet.eachRow((row, rowNum) => {
-    if (rowNum <= 2) return;
+    if (rowNum <= IMPORT_HEADER_ROWS) return;
     const rawName = String(row.getCell(1).value ?? "").trim();
     const email = String(row.getCell(2).value ?? "").trim().toLowerCase();
     const password = String(row.getCell(3).value ?? "").trim();

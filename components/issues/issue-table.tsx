@@ -2,40 +2,17 @@
 
 import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { PriorityDropdown } from "./priority-dropdown";
-import { StatusDropdown } from "./status-dropdown";
-import { AssigneeDropdown } from "./assignee-dropdown";
-import { DueDatePicker } from "./due-date-picker";
-import { formatDate, generateIssueCode } from "@/lib/utils";
-import { bulkUpdateStatus } from "@/app/actions/issues";
-import { STATUS_LABELS } from "@/lib/utils";
-import type { IssuePriority, IssueStatus } from "@/lib/types";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-
-type Issue = {
-  id: string;
-  issueNumber: number;
-  title: string;
-  priority: IssuePriority;
-  status: IssueStatus;
-  department: string | null;
-  issueType: string | null;
-  module: string | null;
-  dateReported: Date | null;
-  dueDate: Date | null;
-  createdAt: Date;
-  project: { code: string; name: string };
-  client: { name: string } | null;
-  assignee: { id: string; name: string } | null;
-  createdBy: { name: string };
-};
+import { bulkUpdateStatus } from "@/app/actions/issues";
+import { BulkActionBar } from "./bulk-action-bar";
+import { IssueRow, type IssueRowData } from "./issue-row";
+import type { IssueStatus } from "@/lib/types";
 
 type User = { id: string; name: string };
 
 interface IssueTableProps {
-  issues: Issue[];
+  issues: IssueRowData[];
   groupBy: string;
   fieldDefs?: { fieldKey: string; label: string }[];
   users?: User[];
@@ -53,7 +30,7 @@ const GROUP_FIELD_LABELS: Record<string, string> = {
   "project.name": "Project",
 };
 
-function getGroupValue(issue: Issue, groupBy: string): string {
+function getGroupValue(issue: IssueRowData, groupBy: string): string {
   switch (groupBy) {
     case "status": return issue.status || "None";
     case "priority": return issue.priority || "None";
@@ -67,16 +44,7 @@ function getGroupValue(issue: Issue, groupBy: string): string {
   }
 }
 
-const rowVariants = {
-  hidden: { opacity: 0, x: -8 },
-  show: (i: number) => ({
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.22, delay: i * 0.03, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
-  }),
-};
-
-export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: IssueTableProps) {
+export function IssueTable({ issues, groupBy, users = [] }: IssueTableProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -92,11 +60,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: Issu
   };
 
   const toggleAll = () => {
-    if (selected.size === issues.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(issues.map((i) => i.id)));
-    }
+    setSelected(selected.size === issues.length ? new Set() : new Set(issues.map((i) => i.id)));
   };
 
   const handleBulkStatus = (status: IssueStatus) => {
@@ -116,7 +80,7 @@ export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: Issu
     });
   };
 
-  const grouped: Map<string, Issue[]> = new Map();
+  const grouped: Map<string, IssueRowData[]> = new Map();
   for (const issue of issues) {
     const key = groupBy ? getGroupValue(issue, groupBy) : "all";
     const arr = grouped.get(key) ?? [];
@@ -128,34 +92,13 @@ export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: Issu
 
   return (
     <div>
-      {/* Bulk actions */}
       <AnimatePresence>
         {selected.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: "auto" }}
-            exit={{ opacity: 0, y: -8, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden mb-3"
-          >
-            <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
-              <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-                {selected.size} selected
-              </span>
-              <span className="text-indigo-200 dark:text-indigo-700">|</span>
-              <span className="text-sm text-gray-600 dark:text-gray-300">Change status:</span>
-              {(["open", "in_progress", "wait_for_user_check", "resolved", "closed"] as IssueStatus[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => handleBulkStatus(s)}
-                  disabled={pending}
-                  className="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-indigo-300 transition-colors font-medium"
-                >
-                  {STATUS_LABELS[s]}
-                </button>
-              ))}
-            </div>
-          </motion.div>
+          <BulkActionBar
+            count={selected.size}
+            pending={pending}
+            onStatusChange={handleBulkStatus}
+          />
         )}
       </AnimatePresence>
 
@@ -194,18 +137,13 @@ export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: Issu
                     >
                       <td colSpan={10} className="px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <motion.div
-                            animate={{ rotate: isCollapsed ? -90 : 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
+                          <motion.div animate={{ rotate: isCollapsed ? -90 : 0 }} transition={{ duration: 0.2 }}>
                             <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
                           </motion.div>
                           <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                             {GROUP_FIELD_LABELS[groupBy] ?? groupBy}:
                           </span>
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-200">
-                            {group}
-                          </span>
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{group}</span>
                           <span className="text-xs text-gray-400 bg-gray-200/60 dark:bg-gray-700/60 px-1.5 py-0.5 rounded-full">
                             {groupIssues.length}
                           </span>
@@ -215,73 +153,16 @@ export function IssueTable({ issues, groupBy, fieldDefs = [], users = [] }: Issu
                   )}
                   <AnimatePresence initial={false}>
                     {!isCollapsed &&
-                      groupIssues.map((issue) => {
-                        const rowIdx = globalRowIndex++;
-                        return (
-                          <motion.tr
-                            key={issue.id}
-                            custom={rowIdx}
-                            variants={rowVariants}
-                            initial="hidden"
-                            animate="show"
-                            exit={{ opacity: 0, x: -8, transition: { duration: 0.15 } }}
-                            className="hover:bg-indigo-50/40 dark:hover:bg-indigo-900/10 transition-colors duration-150"
-                          >
-                            <td className="px-4 py-3">
-                              <input
-                                type="checkbox"
-                                checked={selected.has(issue.id)}
-                                onChange={() => toggleSelect(issue.id)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="rounded border-gray-300 dark:border-gray-600"
-                              />
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <span className="font-mono text-xs text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-1.5 py-0.5 rounded">
-                                {generateIssueCode(issue.project.code, issue.issueNumber)}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <Link
-                                href={`/issues/${issue.id}`}
-                                className="font-medium text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors break-words"
-                              >
-                                {issue.title}
-                              </Link>
-                              {issue.issueType && (
-                                <p className="text-xs text-gray-400 mt-0.5">{issue.issueType}</p>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 hidden lg:table-cell text-gray-500 dark:text-gray-400 text-xs">
-                              {issue.client?.name ?? <span className="text-gray-300 dark:text-gray-600">—</span>}
-                            </td>
-                            <td className="px-4 py-3 hidden xl:table-cell text-gray-500 dark:text-gray-400 text-xs">
-                              {issue.module ?? <span className="text-gray-300 dark:text-gray-600">—</span>}
-                            </td>
-                            <td className="px-4 py-3">
-                              <PriorityDropdown issueId={issue.id} priority={issue.priority} />
-                            </td>
-                            <td className="px-4 py-3">
-                              <StatusDropdown issueId={issue.id} status={issue.status} />
-                            </td>
-                            <td className="px-4 py-3 hidden lg:table-cell text-xs">
-                              <AssigneeDropdown
-                                issueId={issue.id}
-                                issueCode={generateIssueCode(issue.project.code, issue.issueNumber)}
-                                assigneeId={issue.assignee?.id ?? null}
-                                assigneeName={issue.assignee?.name ?? null}
-                                users={users}
-                              />
-                            </td>
-                            <td className="px-4 py-3 hidden xl:table-cell text-xs tabular-nums text-gray-400">
-                              {formatDate(issue.dateReported ?? issue.createdAt)}
-                            </td>
-                            <td className="px-4 py-3 hidden xl:table-cell text-xs">
-                              <DueDatePicker issueId={issue.id} dueDate={issue.dueDate} />
-                            </td>
-                          </motion.tr>
-                        );
-                      })}
+                      groupIssues.map((issue) => (
+                        <IssueRow
+                          key={issue.id}
+                          issue={issue}
+                          rowIndex={globalRowIndex++}
+                          selected={selected.has(issue.id)}
+                          users={users}
+                          onToggleSelect={toggleSelect}
+                        />
+                      ))}
                   </AnimatePresence>
                 </Fragment>
               );

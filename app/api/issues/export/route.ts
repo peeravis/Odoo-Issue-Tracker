@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   // Auth check
   const session = await decrypt(request.cookies.get("session")?.value);
   if (!session) {
-    return new Response("Unauthorized", { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const sp = request.nextUrl.searchParams;

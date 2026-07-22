@@ -3,18 +3,21 @@
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { createSession, deleteSession } from "@/lib/session";
+import { createSession, deleteSession, getSession } from "@/lib/session";
+import { loginSchema, changePasswordSchema } from "@/lib/schemas";
 
 export async function login(
   _state: { error?: string } | undefined,
   formData: FormData
 ): Promise<{ error?: string }> {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
-  if (!email || !password) {
-    return { error: "กรุณากรอกอีเมลและรหัสผ่าน" };
+  const parsed = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
   }
+  const { email, password } = parsed.data;
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.isActive) {
@@ -48,23 +51,18 @@ export async function changePassword(
   _state: { error?: string; success?: boolean } | undefined,
   formData: FormData
 ): Promise<{ error?: string; success?: boolean }> {
-  const { getSession } = await import("@/lib/session");
   const session = await getSession();
   if (!session) return { error: "กรุณาเข้าสู่ระบบก่อน" };
 
-  const currentPassword = formData.get("currentPassword") as string;
-  const newPassword = formData.get("newPassword") as string;
-  const confirmPassword = formData.get("confirmPassword") as string;
-
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    return { error: "กรุณากรอกข้อมูลให้ครบ" };
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    newPassword: formData.get("newPassword"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
   }
-  if (newPassword.length < 6) {
-    return { error: "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร" };
-  }
-  if (newPassword !== confirmPassword) {
-    return { error: "รหัสผ่านใหม่ไม่ตรงกัน" };
-  }
+  const { currentPassword, newPassword } = parsed.data;
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) return { error: "ไม่พบผู้ใช้งาน" };

@@ -3,28 +3,31 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireSession } from "@/lib/session";
 import type { FieldType } from "@/lib/types";
 import { getPermissions } from "@/lib/permissions";
-
-async function requireSession() {
-  const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
-  return session;
-}
+import { ForbiddenError, ValidationError } from "@/lib/errors";
+import { createProjectSchema, updateProjectSchema } from "@/lib/schemas";
 
 async function requireAdmin() {
   const session = await requireSession();
   const perms = await getPermissions(session.role);
-  if (!perms.canManageProjects) throw new Error("Forbidden");
+  if (!perms.canManageProjects) throw new ForbiddenError();
   return session;
 }
 
 export async function createProject(formData: FormData) {
   await requireAdmin();
-  const name = formData.get("name") as string;
-  const code = (formData.get("code") as string).toUpperCase();
-  const description = (formData.get("description") as string) || null;
+
+  const parsed = createProjectSchema.safeParse({
+    name: formData.get("name"),
+    code: formData.get("code"),
+    description: formData.get("description") || undefined,
+  });
+  if (!parsed.success) throw new ValidationError(parsed.error.issues[0].message);
+
+  const { name, description } = parsed.data;
+  const code = parsed.data.code.toUpperCase();
 
   const project = await prisma.project.create({
     data: { name, code, description },
@@ -36,9 +39,15 @@ export async function createProject(formData: FormData) {
 
 export async function updateProject(projectId: string, formData: FormData) {
   await requireAdmin();
-  const name = formData.get("name") as string;
-  const description = (formData.get("description") as string) || null;
-  const status = formData.get("status") as "active" | "closed";
+
+  const parsed = updateProjectSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description") || undefined,
+    status: formData.get("status"),
+  });
+  if (!parsed.success) throw new ValidationError(parsed.error.issues[0].message);
+
+  const { name, description, status } = parsed.data;
 
   await prisma.project.update({
     where: { id: projectId },
@@ -72,7 +81,6 @@ export async function removeProjectMember(projectId: string, userId: string) {
   redirect(`/projects/${projectId}/settings`);
 }
 
-// Custom field definitions
 export async function upsertFieldDefinition(projectId: string, formData: FormData) {
   await requireAdmin();
   const id = (formData.get("id") as string) || undefined;
@@ -106,7 +114,6 @@ export async function deleteFieldDefinition(projectId: string, fieldId: string) 
   redirect(`/projects/${projectId}/settings`);
 }
 
-// Per-project dropdown actions
 export async function addProjectDropdown(projectId: string, formData: FormData) {
   await requireAdmin();
   const type = formData.get("type") as string;
@@ -133,12 +140,9 @@ export async function deleteProjectDropdown(id: string, projectId: string) {
   redirect(`/projects/${projectId}/settings`);
 }
 
-// Per-project status config
-// Reads indexed form fields: configs[N][statusKey], configs[N][label], configs[N][isActive], configs[N][sortOrder]
 export async function upsertStatusConfig(projectId: string, formData: FormData) {
   await requireAdmin();
 
-  // Collect all indexed entries
   const entries: Array<{ statusKey: string; label: string; isActive: boolean; sortOrder: number }> = [];
   let idx = 0;
   while (formData.has(`configs[${idx}][statusKey]`)) {
@@ -153,24 +157,14 @@ export async function upsertStatusConfig(projectId: string, formData: FormData) 
   for (const cfg of entries) {
     await prisma.projectStatusConfig.upsert({
       where: { projectId_statusKey: { projectId, statusKey: cfg.statusKey } },
-      create: {
-        projectId,
-        statusKey: cfg.statusKey,
-        label: cfg.label,
-        isActive: cfg.isActive,
-        sortOrder: cfg.sortOrder,
-      },
-      update: {
-        label: cfg.label,
-        isActive: cfg.isActive,
-      },
+      create: { projectId, statusKey: cfg.statusKey, label: cfg.label, isActive: cfg.isActive, sortOrder: cfg.sortOrder },
+      update: { label: cfg.label, isActive: cfg.isActive },
     });
   }
   revalidatePath(`/projects/${projectId}/settings`);
   redirect(`/projects/${projectId}/settings`);
 }
 
-// Per-project member role
 export async function updateProjectMemberRole(projectId: string, userId: string, role: string) {
   await requireAdmin();
   await prisma.projectMember.update({
@@ -180,7 +174,6 @@ export async function updateProjectMemberRole(projectId: string, userId: string,
   revalidatePath(`/projects/${projectId}/settings`);
   redirect(`/projects/${projectId}/settings`);
 }
-
 
 export async function addProjectGroup(formData: FormData) {
   await requireAdmin();

@@ -1,4 +1,5 @@
 export type { IssuePriority, IssueStatus, FieldType } from "@/app/generated/prisma/enums";
+export type { SessionPayload } from "@/lib/session";
 
 /** User that can be assigned to issues (extraRoles: vendor | aspd). */
 export type AssigneeUser = {
