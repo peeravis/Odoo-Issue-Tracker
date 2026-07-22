@@ -114,12 +114,11 @@ export default async function NewIssuePage({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type</label>
             {masterIssueTypes.length ? (
-              <select name="issueType" className="input-base w-full">
-                <option value="">-- Select --</option>
-                {masterIssueTypes.map((o) => (
-                  <option key={o.id} value={o.label}>{o.label}</option>
-                ))}
-              </select>
+              <SearchableSelect
+                name="issueType"
+                options={masterIssueTypes.map((o) => ({ value: o.label, label: o.label }))}
+                placeholder="-- Select --"
+              />
             ) : (
               <input name="issueType" placeholder="ระบุประเภท issue" className="input-base w-full" />
             )}
@@ -158,13 +157,15 @@ export default async function NewIssuePage({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To <span className="text-red-500">*</span></label>
-            <select name="assigneeId" required className="input-base w-full">
-              <option value="">-- Unassigned --</option>
-              {assigneeUsers.map((u) => {
+            <SearchableSelect
+              name="assigneeId"
+              options={assigneeUsers.map((u) => {
                 const role = u.extraRoles.includes("aspd") ? "ASPD" : "Vendor";
-                return <option key={u.id} value={u.id}>{u.name} ({role})</option>;
+                return { value: u.id, label: `${u.name} (${role})` };
               })}
-            </select>
+              placeholder="-- Unassigned --"
+              required
+            />
           </div>
 
           <div>
@@ -219,22 +220,29 @@ function CustomField({
   }
   if (field.fieldType === "boolean") {
     return (
-      <select name={name} required={required} className="input-base w-full">
-        <option value="">-- Select --</option>
-        <option value="true">Yes</option>
-        <option value="false">No</option>
-      </select>
+      <SearchableSelect
+        name={name}
+        options={[{ value: "true", label: "Yes" }, { value: "false", label: "No" }]}
+        placeholder="-- Select --"
+        required={required}
+      />
     );
   }
-  if (field.fieldType === "select" || field.fieldType === "multiselect") {
+  if (field.fieldType === "select") {
     const opts = (field.options as string[]) ?? [];
     return (
-      <select
+      <SearchableSelect
         name={name}
+        options={opts.map((o) => ({ value: o, label: o }))}
+        placeholder="-- Select --"
         required={required}
-        multiple={field.fieldType === "multiselect"}
-        className="input-base w-full"
-      >
+      />
+    );
+  }
+  if (field.fieldType === "multiselect") {
+    const opts = (field.options as string[]) ?? [];
+    return (
+      <select name={name} required={required} multiple className="input-base w-full">
         <option value="">-- Select --</option>
         {opts.map((o) => (
           <option key={o} value={o}>{o}</option>

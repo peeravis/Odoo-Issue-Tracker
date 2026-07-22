@@ -160,12 +160,12 @@ export default async function IssueDetailPage({
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type</label>
                   {masterIssueTypes.length > 0 ? (
-                    <select name="issueType" defaultValue={issue.issueType ?? ""} className="input-base w-full">
-                      <option value="">-- None --</option>
-                      {masterIssueTypes.map((o) => (
-                        <option key={o.id} value={o.label}>{o.label}</option>
-                      ))}
-                    </select>
+                    <SearchableSelect
+                      name="issueType"
+                      options={masterIssueTypes.map((o) => ({ value: o.label, label: o.label }))}
+                      placeholder="-- None --"
+                      defaultValue={issue.issueType ?? ""}
+                    />
                   ) : (
                     <input name="issueType" defaultValue={issue.issueType ?? ""} placeholder="ระบุประเภท issue" className="input-base w-full" />
                   )}
@@ -198,13 +198,15 @@ export default async function IssueDetailPage({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
-                  <select name="assigneeId" defaultValue={issue.assigneeId ?? ""} className="input-base w-full">
-                    <option value="">-- Unassigned --</option>
-                    {allUsers.map((u) => {
+                  <SearchableSelect
+                    name="assigneeId"
+                    options={allUsers.map((u) => {
                       const role = u.extraRoles.includes("aspd") ? "ASPD" : "Vendor";
-                      return <option key={u.id} value={u.id}>{u.name} ({role})</option>;
+                      return { value: u.id, label: `${u.name} (${role})` };
                     })}
-                  </select>
+                    placeholder="-- Unassigned --"
+                    defaultValue={issue.assigneeId ?? ""}
+                  />
                 </div>
 
                 <div>
@@ -253,16 +255,25 @@ export default async function IssueDetailPage({
                       className="input-base w-full"
                     />
                   ) : field.fieldType === "boolean" ? (
-                    <select name={`custom_${field.fieldKey}`} defaultValue={String(customFields[field.fieldKey] ?? "")} className="input-base w-full">
-                      <option value="">--</option>
-                      <option value="true">Yes</option>
-                      <option value="false">No</option>
-                    </select>
-                  ) : (field.fieldType === "select" || field.fieldType === "multiselect") ? (
+                    <SearchableSelect
+                      name={`custom_${field.fieldKey}`}
+                      options={[{ value: "true", label: "Yes" }, { value: "false", label: "No" }]}
+                      placeholder="--"
+                      defaultValue={String(customFields[field.fieldKey] ?? "")}
+                    />
+                  ) : field.fieldType === "select" ? (
+                    <SearchableSelect
+                      name={`custom_${field.fieldKey}`}
+                      options={((field.options as string[]) ?? []).map((o) => ({ value: o, label: o }))}
+                      placeholder="--"
+                      defaultValue={String(customFields[field.fieldKey] ?? "")}
+                      required={field.isRequired}
+                    />
+                  ) : field.fieldType === "multiselect" ? (
                     <select
                       name={`custom_${field.fieldKey}`}
                       defaultValue={String(customFields[field.fieldKey] ?? "")}
-                      multiple={field.fieldType === "multiselect"}
+                      multiple
                       className="input-base w-full"
                     >
                       <option value="">--</option>
