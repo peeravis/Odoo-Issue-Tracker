@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/session";
+import { ALLOWED_IMPORT_TYPE } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   const session = await decrypt(request.cookies.get("session")?.value);
@@ -12,11 +13,12 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
   if (!file) return Response.json({ error: "No file" }, { status: 400 });
+  if (file.type !== ALLOWED_IMPORT_TYPE) {
+    return Response.json({ error: "รองรับเฉพาะไฟล์ .xlsx เท่านั้น" }, { status: 400 });
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const buffer = Buffer.from(await file.arrayBuffer()) as any;
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
+  await workbook.xlsx.load(await file.arrayBuffer());
 
   const sheet = workbook.worksheets[0];
   if (!sheet) return Response.json({ error: "Empty workbook" }, { status: 400 });

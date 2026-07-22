@@ -14,6 +14,12 @@ export type SessionPayload = {
 };
 
 const secretKey = process.env.SESSION_SECRET;
+if (!secretKey || secretKey.length < 32) {
+  throw new Error(
+    "SESSION_SECRET env var must be set and at least 32 characters. " +
+    "Generate one with: openssl rand -base64 32"
+  );
+}
 const encodedKey = new TextEncoder().encode(secretKey);
 
 export async function decrypt(session?: string): Promise<SessionPayload | null> {

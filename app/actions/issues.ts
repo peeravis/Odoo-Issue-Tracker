@@ -11,7 +11,7 @@ import { canViewAllProjects, generateIssueCode } from "@/lib/utils";
 import { getPermissions } from "@/lib/permissions";
 import { sendAssignmentEmail, sendWaitForCheckEmail, sendResolvedEmail, sendCommentEmail } from "@/lib/mailer";
 import type { IssuePriority, IssueStatus, SessionPayload } from "@/lib/types";
-import { UPLOAD_DIR, MAX_FILE_SIZE, BASE_URL } from "@/lib/constants";
+import { UPLOAD_DIR, MAX_FILE_SIZE, BASE_URL, ALLOWED_ATTACHMENT_TYPES } from "@/lib/constants";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createIssueSchema, addCommentSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
@@ -96,7 +96,9 @@ export async function createIssue(formData: FormData) {
   });
 
   // Save attachments from description form
-  const validFiles = attachmentFiles.filter((f) => f && f.size > 0 && f.size <= MAX_FILE_SIZE);
+  const validFiles = attachmentFiles.filter(
+    (f) => f && f.size > 0 && f.size <= MAX_FILE_SIZE && ALLOWED_ATTACHMENT_TYPES.has(f.type)
+  );
   if (validFiles.length > 0) {
     await mkdir(UPLOAD_DIR, { recursive: true });
     for (const file of validFiles) {
@@ -607,6 +609,7 @@ export async function uploadAttachment(issueId: string, formData: FormData) {
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return;
   if (file.size > MAX_FILE_SIZE) throw new ValidationError("ไฟล์ใหญ่เกินไป (สูงสุด 5 MB)");
+  if (!ALLOWED_ATTACHMENT_TYPES.has(file.type)) throw new ValidationError("ประเภทไฟล์ไม่รองรับ");
 
   const bytes = await file.arrayBuffer();
   await mkdir(UPLOAD_DIR, { recursive: true });

@@ -6,6 +6,7 @@ import { generateIssueCode, PRIORITY_LABELS, STATUS_LABELS, canViewAllProjects }
 import { format } from "date-fns";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
 import { buildIssueWhere } from "@/lib/db/issue-filters";
+import { EXPORT_MAX_ROWS } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   // Auth check
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
   const issues = await prisma.issue.findMany({
     where,
     orderBy: { createdAt: "desc" },
+    take: EXPORT_MAX_ROWS,
     include: {
       project: { include: { fieldDefs: { orderBy: { sortOrder: "asc" } } } },
       client: true,
@@ -115,12 +117,16 @@ export async function GET(request: NextRequest) {
   const dateStr = format(new Date(), "yyyyMMdd");
   const filename = `issue-log_${projectCode}_${dateStr}.xlsx`;
 
-  return new Response(buffer, {
-    headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
-  });
+  const responseHeaders: Record<string, string> = {
+    "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+  };
+  if (issues.length === EXPORT_MAX_ROWS) {
+    responseHeaders["X-Export-Truncated"] = "true";
+    responseHeaders["X-Export-Limit"] = String(EXPORT_MAX_ROWS);
+  }
+
+  return new Response(buffer, { headers: responseHeaders });
 }
 
 type IssueRow = {

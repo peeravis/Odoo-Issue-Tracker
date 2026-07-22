@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+import { decrypt } from "@/lib/session";
+import { UPLOAD_DIR } from "@/lib/constants";
 
 const MIME_TYPES: Record<string, string> = {
   ".pdf": "application/pdf",
@@ -22,9 +22,14 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ filename: string }> }
 ) {
+  const session = await decrypt(req.cookies.get("session")?.value);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { filename } = await params;
   const safe = path.basename(filename);
   const filePath = path.join(UPLOAD_DIR, safe);

@@ -27,3 +27,26 @@ export const SESSION_DEFAULT_EXPIRY = "7d";
 
 // Security
 export const BCRYPT_ROUNDS = 12;
+
+// Allowed file types for issue attachments
+export const ALLOWED_ATTACHMENT_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/plain",
+  "text/csv",
+  "application/zip",
+]);
+
+// Allowed MIME type for Excel imports
+export const ALLOWED_IMPORT_TYPE =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+// Max rows to export in one request (prevents OOM)
+export const EXPORT_MAX_ROWS = 10_000;

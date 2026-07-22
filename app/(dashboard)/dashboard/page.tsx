@@ -43,15 +43,10 @@ export default async function DashboardPage({
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [openCount, inProgressCount, waitForCheckCount, resolvedCount, closedCount, reopenedCount, recentIssues, priorityStats, monthlyStats, overdueIssues, projectStats, assigneeStats,
+  const [statusCounts, recentIssues, priorityStats, monthlyStats, overdueIssues, projectStats, assigneeStats,
     todayNewCount, todayByStatus, pendingTotal, pendingByStatus, todayResolvedCount, totalAllCount] =
     await Promise.all([
-      prisma.issue.count({ where: { ...projectFilter, status: "open" } }),
-      prisma.issue.count({ where: { ...projectFilter, status: "in_progress" } }),
-      prisma.issue.count({ where: { ...projectFilter, status: "wait_for_user_check" } }),
-      prisma.issue.count({ where: { ...projectFilter, status: "resolved" } }),
-      prisma.issue.count({ where: { ...projectFilter, status: "closed" } }),
-      prisma.issue.count({ where: { ...projectFilter, status: "reopened" } }),
+      prisma.issue.groupBy({ by: ["status"], where: projectFilter, _count: true }),
       prisma.issue.findMany({
         where: projectFilter,
         orderBy: { createdAt: "desc" },
@@ -108,7 +103,14 @@ export default async function DashboardPage({
       prisma.issue.count({ where: projectFilter }),
     ]);
 
-  const totalIssues = openCount + inProgressCount + waitForCheckCount + resolvedCount + closedCount + reopenedCount;
+  const getStatusCount = (s: string) => statusCounts.find((x) => x.status === s)?._count ?? 0;
+  const openCount = getStatusCount("open");
+  const inProgressCount = getStatusCount("in_progress");
+  const waitForCheckCount = getStatusCount("wait_for_user_check");
+  const resolvedCount = getStatusCount("resolved");
+  const closedCount = getStatusCount("closed");
+  const reopenedCount = getStatusCount("reopened");
+  const totalIssues = statusCounts.reduce((sum, x) => sum + x._count, 0);
 
   // Build 6-month trend
   const now = new Date();

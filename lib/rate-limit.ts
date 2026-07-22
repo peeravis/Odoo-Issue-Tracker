@@ -9,6 +9,8 @@ export function checkRateLimit(
   const entry = store.get(key);
 
   if (!entry || now > entry.resetAt) {
+    // Clean up expired entry before resetting
+    if (entry) store.delete(key);
     store.set(key, { count: 1, resetAt: now + windowMs });
     return { allowed: true, remaining: maxAttempts - 1 };
   }
@@ -23,4 +25,12 @@ export function checkRateLimit(
 
 export function resetRateLimit(key: string) {
   store.delete(key);
+}
+
+// Purge all expired entries — call periodically if needed
+export function purgeExpiredRateLimits() {
+  const now = Date.now();
+  for (const [key, entry] of store.entries()) {
+    if (now > entry.resetAt) store.delete(key);
+  }
 }
