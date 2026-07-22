@@ -314,15 +314,14 @@ export async function addComment(issueId: string, formData: FormData) {
     data: { lastModifiedAt: new Date(), modifiedById: session.userId },
   });
 
-  // Notify creator and assignee (skip the commenter themselves)
+  // Notify creator, assignee, and the commenter
   const issueCode = generateIssueCode(issue.project.code, issue.issueNumber);
   const issueUrl  = `${BASE_URL}/issues/${issueId}`;
-  const commenter = await prisma.user.findUnique({ where: { id: session.userId }, select: { name: true } });
+  const commenter = await prisma.user.findUnique({ where: { id: session.userId }, select: { id: true, name: true, email: true } });
   const commenterName = commenter?.name ?? "Someone";
 
-  const recipients = [issue.createdBy, issue.assignee].filter(
-    (u): u is { id: string; name: string; email: string } =>
-      u !== null && u.email !== null && u.id !== session.userId
+  const recipients = [issue.createdBy, issue.assignee, commenter].filter(
+    (u): u is { id: string; name: string; email: string } => u !== null && !!u.email
   );
   // Deduplicate in case creator === assignee
   const seen = new Set<string>();
