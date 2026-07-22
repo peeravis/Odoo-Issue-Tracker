@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/session";
 import { generateIssueCode, STATUS_LABELS, PRIORITY_LABELS, canViewAllProjects } from "@/lib/utils";
+import { drawBarChart, drawDonutChart } from "@/lib/excel-charts";
 import { format } from "date-fns";
 import type { IssueStatus } from "@/lib/types";
 
@@ -161,6 +162,41 @@ export async function GET(request: NextRequest) {
     daily.getColumn(2).width = 16;
     daily.getColumn(3).width = 18;
     daily.getColumn(4).width = 18;
+
+    // ── Daily Charts ─────────────────────────────────────────────────────────
+    const toChartColor = (argb: string) => "#" + argb.slice(2);
+
+    const todayChartItems = STATUS_ORDER
+      .map((s) => ({ label: STATUS_LABELS[s], value: todayByStatus.find((r) => r.status === s)?._count ?? 0, color: toChartColor(STATUS_COLORS[s]) }))
+      .filter((d) => d.value > 0);
+
+    const pendingChartItems = STATUS_ORDER
+      .map((s) => ({ label: STATUS_LABELS[s], value: pendingByStatus.find((r) => r.status === s)?._count ?? 0, color: toChartColor(STATUS_COLORS[s]) }))
+      .filter((d) => d.value > 0);
+
+    if (todayChartItems.length > 0) {
+      const buf = drawBarChart({
+        title: `เคสที่เปิดวันนี้ — ${todayLabel}`,
+        labels: todayChartItems.map((d) => d.label),
+        values: todayChartItems.map((d) => d.value),
+        colors: todayChartItems.map((d) => d.color),
+        total: totalAllCount,
+      });
+      const imgId = workbook.addImage({ buffer: buf, extension: "png" });
+      daily.addImage(imgId, "F3:O24");
+    }
+
+    if (pendingChartItems.length > 0) {
+      const buf = drawBarChart({
+        title: `เคสค้างอยู่ — ${pendingTotal} เคส`,
+        labels: pendingChartItems.map((d) => d.label),
+        values: pendingChartItems.map((d) => d.value),
+        colors: pendingChartItems.map((d) => d.color),
+        total: totalAllCount,
+      });
+      const imgId = workbook.addImage({ buffer: buf, extension: "png" });
+      daily.addImage(imgId, "P3:Y24");
+    }
   }
 
   // ── Sheet 1: Summary ─────────────────────────────────────────────────────────
@@ -217,6 +253,22 @@ export async function GET(request: NextRequest) {
   summarySheet.getColumn(1).width = 26;
   summarySheet.getColumn(2).width = 18;
   summarySheet.getColumn(3).width = 16;
+
+  // ── Summary Chart ─────────────────────────────────────────────────────────
+  const summaryChartItems = STATUS_ORDER
+    .map((s) => ({ label: STATUS_LABELS[s], value: statusCounts.find((c) => c.status === s)?._count ?? 0, color: "#" + STATUS_COLORS[s].slice(2) }))
+    .filter((d) => d.value > 0);
+
+  if (summaryChartItems.length > 0) {
+    const buf = drawDonutChart({
+      title: "Issues by Status",
+      labels: summaryChartItems.map((d) => d.label),
+      values: summaryChartItems.map((d) => d.value),
+      colors: summaryChartItems.map((d) => d.color),
+    });
+    const imgId = workbook.addImage({ buffer: buf, extension: "png" });
+    summarySheet.addImage(imgId, "E1:N18");
+  }
 
   // ── Sheet 2: Issues Detail ────────────────────────────────────────────────────
   const detailSheet = workbook.addWorksheet("Issues Detail");
