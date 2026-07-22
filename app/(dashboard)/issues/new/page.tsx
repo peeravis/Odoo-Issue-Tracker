@@ -9,6 +9,7 @@ import { getPermissions } from "@/lib/permissions";
 import { StatusSolutionFields } from "@/components/issues/status-solution-fields";
 import { DescriptionWithAttachments } from "@/components/issues/description-with-attachments";
 import { getDropdowns, getAssigneeUsers } from "@/lib/db/dropdowns";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 export default async function NewIssuePage({
   searchParams,
@@ -88,12 +89,12 @@ export default async function NewIssuePage({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client <span className="text-red-500">*</span></label>
-            <select name="clientId" required className="input-base w-full">
-              <option value="">-- Select Client --</option>
-              {allClients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              name="clientId"
+              options={allClients.map((c) => ({ value: c.id, label: c.name }))}
+              placeholder="-- Select Client --"
+              required
+            />
           </div>
 
           <div>

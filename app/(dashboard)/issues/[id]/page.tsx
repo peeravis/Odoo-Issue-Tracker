@@ -16,6 +16,7 @@ import { AttachmentList } from "@/components/issues/attachment-list";
 import { Markdown } from "@/components/ui/markdown";
 import { DescriptionWithAttachments } from "@/components/issues/description-with-attachments";
 import { getDropdowns, getAssigneeUsers } from "@/lib/db/dropdowns";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 export default async function IssueDetailPage({
   params,
@@ -134,12 +135,12 @@ export default async function IssueDetailPage({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client</label>
-                  <select name="clientId" defaultValue={issue.clientId ?? ""} className="input-base w-full">
-                    <option value="">-- None --</option>
-                    {allClients.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                  <SearchableSelect
+                    name="clientId"
+                    options={allClients.map((c) => ({ value: c.id, label: c.name }))}
+                    placeholder="-- None --"
+                    defaultValue={issue.clientId ?? ""}
+                  />
                 </div>
 
                 <div>
