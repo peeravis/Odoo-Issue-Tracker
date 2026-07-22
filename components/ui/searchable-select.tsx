@@ -11,23 +11,31 @@ export function SearchableSelect({
   placeholder = "-- Select --",
   required,
   defaultValue = "",
+  onChange,
 }: {
-  name: string;
+  name?: string;
   options: Option[];
   placeholder?: string;
   required?: boolean;
   defaultValue?: string;
+  onChange?: (value: string) => void;
 }) {
   const id = useId();
-  const initialLabel = options.find((o) => o.value === defaultValue)?.label ?? "";
+  const findOption = (val: string) => options.find((o) => o.value === val) ?? null;
 
-  const [search, setSearch] = useState(initialLabel);
-  const [selected, setSelected] = useState<Option | null>(
-    defaultValue ? (options.find((o) => o.value === defaultValue) ?? null) : null
-  );
+  const [search, setSearch] = useState(() => findOption(defaultValue)?.label ?? "");
+  const [selected, setSelected] = useState<Option | null>(() => findOption(defaultValue));
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync state when defaultValue changes (e.g. URL param update via router.push)
+  useEffect(() => {
+    const opt = findOption(defaultValue);
+    setSelected(opt);
+    setSearch(opt?.label ?? "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultValue]);
 
   const filtered = search.trim() && !selected
     ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
@@ -48,6 +56,7 @@ export function SearchableSelect({
     setSelected(opt);
     setSearch(opt.label);
     setOpen(false);
+    onChange?.(opt.value);
   };
 
   const handleClear = () => {
@@ -55,6 +64,7 @@ export function SearchableSelect({
     setSearch("");
     inputRef.current?.focus();
     setOpen(true);
+    onChange?.("");
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,7 +75,7 @@ export function SearchableSelect({
 
   return (
     <div ref={containerRef} className="relative">
-      <input type="hidden" name={name} value={selected?.value ?? ""} required={required} />
+      {name && <input type="hidden" name={name} value={selected?.value ?? ""} required={required} />}
 
       <div className="relative">
         <input

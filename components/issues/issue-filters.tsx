@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Filter, User, AlertTriangle, Clock, CalendarDays } from "lucide-react";
 import { STATUS_LABELS } from "@/lib/utils";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 interface Project { id: string; name: string }
 interface UserItem { id: string; name: string; extraRoles?: string[] }
@@ -127,26 +128,22 @@ export function IssueFilters({ projects, users, clients, modules, issueTypes, de
 
           <div>
             <label className="block text-xs text-gray-500 mb-1">Project</label>
-            <select
+            <SearchableSelect
+              options={projects.map((p) => ({ value: p.id, label: p.name }))}
+              placeholder="All Projects"
               defaultValue={defaults.projectId ?? ""}
-              onChange={(e) => handleSelect("projectId", e.target.value)}
-              className="input-base w-full"
-            >
-              <option value="">All Projects</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+              onChange={(v) => handleSelect("projectId", v)}
+            />
           </div>
 
           <div>
             <label className="block text-xs text-gray-500 mb-1">Client</label>
-            <select
+            <SearchableSelect
+              options={clients.map((c) => ({ value: c.id, label: c.name }))}
+              placeholder="All Clients"
               defaultValue={defaults.clientId ?? ""}
-              onChange={(e) => handleSelect("clientId", e.target.value)}
-              className="input-base w-full"
-            >
-              <option value="">All Clients</option>
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+              onChange={(v) => handleSelect("clientId", v)}
+            />
           </div>
 
           <div>
@@ -179,17 +176,15 @@ export function IssueFilters({ projects, users, clients, modules, issueTypes, de
 
           <div>
             <label className="block text-xs text-gray-500 mb-1">Assignee</label>
-            <select
-              defaultValue={defaults.assigneeId ?? ""}
-              onChange={(e) => handleSelect("assigneeId", e.target.value)}
-              className="input-base w-full"
-            >
-              <option value="">All</option>
-              {users.map((u) => {
+            <SearchableSelect
+              options={users.map((u) => {
                 const suffix = u.extraRoles?.includes("aspd") ? " (ASPD)" : u.extraRoles?.includes("vendor") ? " (Vendor)" : "";
-                return <option key={u.id} value={u.id}>{u.name}{suffix}</option>;
+                return { value: u.id, label: `${u.name}${suffix}` };
               })}
-            </select>
+              placeholder="All"
+              defaultValue={defaults.assigneeId ?? ""}
+              onChange={(v) => handleSelect("assigneeId", v)}
+            />
           </div>
 
           {modules.length > 0 && (
@@ -209,14 +204,12 @@ export function IssueFilters({ projects, users, clients, modules, issueTypes, de
           {issueTypes.length > 0 && (
             <div>
               <label className="block text-xs text-gray-500 mb-1">Issue Type</label>
-              <select
+              <SearchableSelect
+                options={issueTypes.map((t) => ({ value: t, label: t }))}
+                placeholder="All"
                 defaultValue={defaults.issueType ?? ""}
-                onChange={(e) => handleSelect("issueType", e.target.value)}
-                className="input-base w-full"
-              >
-                <option value="">All</option>
-                {issueTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+                onChange={(v) => handleSelect("issueType", v)}
+              />
             </div>
           )}
 
@@ -258,21 +251,21 @@ export function IssueFilters({ projects, users, clients, modules, issueTypes, de
             <label className="block text-xs text-gray-500 mb-1 flex items-center gap-1">
               <Filter className="h-3 w-3" /> Group By
             </label>
-            <select
+            <SearchableSelect
+              options={[
+                { value: "status", label: "Status" },
+                { value: "priority", label: "Priority" },
+                { value: "module", label: "Module" },
+                { value: "issueType", label: "Issue Type" },
+                { value: "department", label: "Department" },
+                { value: "assignee.name", label: "Assignee" },
+                { value: "client.name", label: "Client" },
+                { value: "project.name", label: "Project" },
+              ]}
+              placeholder="No Group"
               defaultValue={defaults.groupBy ?? ""}
-              onChange={(e) => handleSelect("groupBy", e.target.value)}
-              className="input-base w-full"
-            >
-              <option value="">No Group</option>
-              <option value="status">Status</option>
-              <option value="priority">Priority</option>
-              <option value="module">Module</option>
-              <option value="issueType">Issue Type</option>
-              <option value="department">Department</option>
-              <option value="assignee.name">Assignee</option>
-              <option value="client.name">Client</option>
-              <option value="project.name">Project</option>
-            </select>
+              onChange={(v) => handleSelect("groupBy", v)}
+            />
           </div>
 
           <div className="flex items-end gap-2 col-span-2">
