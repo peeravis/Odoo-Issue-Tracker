@@ -113,7 +113,7 @@ export async function createIssue(formData: FormData) {
         issueCode: generateIssueCode(project.code, issueNumber),
         issueUrl: `${baseUrl}/issues/${issue.id}`,
         projectName: project.name,
-      }).catch(() => {}); // Non-blocking
+      }).catch((err) => console.error("[mailer] createIssue failed:", err));
     }
   }
 
@@ -232,7 +232,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
         issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
         issueUrl: `${baseUrl}/issues/${issueId}`,
         projectName: issueWithProject.project.name,
-      }).catch(() => {});
+      }).catch((err) => console.error("[mailer] updateIssue failed:", err));
     }
   }
 
@@ -399,9 +399,9 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
       assigneeName: newAssignee.name,
       issueTitle: issueWithProject.title,
       issueCode: generateIssueCode(issueWithProject.project.code, issueWithProject.issueNumber),
-      issueUrl: `${baseUrl}/issues/${issueId}`,
+      issueUrl: `${BASE_URL}/issues/${issueId}`,
       projectName: issueWithProject.project.name,
-    }).catch(() => {});
+    }).catch((err) => console.error("[mailer] updateIssueAssignee failed:", err));
   }
 
   revalidatePath("/issues");
