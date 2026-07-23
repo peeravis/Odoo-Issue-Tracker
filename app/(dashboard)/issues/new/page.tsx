@@ -59,7 +59,7 @@ export default async function NewIssuePage({
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/issues" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        <Link href={`/issues${selectedProjectId ? `?projectId=${selectedProjectId}` : ""}`} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">New Issue</h1>
@@ -194,7 +194,7 @@ export default async function NewIssuePage({
         ))}
 
         <div className="flex gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-          <Link href="/issues" className="btn-secondary flex-1 text-center py-2">Cancel</Link>
+          <Link href={`/issues${selectedProjectId ? `?projectId=${selectedProjectId}` : ""}`} className="btn-secondary flex-1 text-center py-2">Cancel</Link>
           <button type="submit" className="btn-primary flex-1">Create Issue</button>
         </div>
       </form>
