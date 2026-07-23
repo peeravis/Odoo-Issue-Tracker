@@ -106,7 +106,7 @@ export default async function IssuesPage({
               <Download className="h-4 w-4" />
               Export
             </a>
-            <Link href="/issues/new" className="btn-primary inline-flex items-center gap-2">
+            <Link href={`/issues/new${sp.projectId ? `?projectId=${sp.projectId}` : ""}`} className="btn-primary inline-flex items-center gap-2">
               <Plus className="h-4 w-4" />
               New Issue
             </Link>
