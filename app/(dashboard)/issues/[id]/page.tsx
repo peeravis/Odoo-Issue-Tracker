@@ -94,7 +94,7 @@ export default async function IssueDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <Link href="/issues" className="mt-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0">
+          <Link href={`/issues?projectId=${issue.projectId}`} className="mt-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
