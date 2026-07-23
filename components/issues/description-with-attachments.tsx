@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Paperclip, X, FileText, ZoomIn } from "lucide-react";
+import { Paperclip, X, FileText, ZoomIn, Eye } from "lucide-react";
 
 interface FilePreview {
   name: string;
@@ -9,13 +9,15 @@ interface FilePreview {
   type: string;
 }
 
+type LightboxState = { url: string; type: "image" | "pdf"; name: string } | null;
+
 interface DescriptionWithAttachmentsProps {
   defaultDescription?: string;
 }
 
 export function DescriptionWithAttachments({ defaultDescription = "" }: DescriptionWithAttachmentsProps) {
   const [previews, setPreviews] = useState<FilePreview[]>([]);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<LightboxState>(null);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLInputElement>(null);
   const dtRef = useRef<DataTransfer | null>(null);
@@ -35,7 +37,7 @@ export function DescriptionWithAttachments({ defaultDescription = "" }: Descript
 
     const newPreviews: FilePreview[] = files.map((f) => ({
       name: f.name,
-      url: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
+      url: f.type.startsWith("image/") || f.type === "application/pdf" ? URL.createObjectURL(f) : null,
       type: f.type,
     }));
     setPreviews((prev) => [...prev, ...newPreviews]);
@@ -63,17 +65,30 @@ export function DescriptionWithAttachments({ defaultDescription = "" }: Descript
       {/* Lightbox */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setLightbox(null)}
         >
-          <img
-            src={lightbox}
-            alt="preview"
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
-          />
-          <button className="absolute top-4 right-4 text-white hover:text-gray-300">
-            <X className="h-6 w-6" />
-          </button>
+          <div className="relative w-full max-w-4xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2 px-1">
+              <p className="text-white text-sm font-medium truncate pr-4">{lightbox.name}</p>
+              <button onClick={() => setLightbox(null)} className="text-white hover:text-gray-300 flex-shrink-0 transition-colors">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            {lightbox.type === "image" ? (
+              <img
+                src={lightbox.url}
+                alt={lightbox.name}
+                className="max-h-[85vh] w-full object-contain rounded-lg shadow-2xl"
+              />
+            ) : (
+              <iframe
+                src={lightbox.url}
+                className="w-full h-[85vh] rounded-lg bg-white"
+                title={lightbox.name}
+              />
+            )}
+          </div>
         </div>
       )}
 
@@ -117,14 +132,16 @@ export function DescriptionWithAttachments({ defaultDescription = "" }: Descript
           {/* Previews */}
           {previews.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {previews.map((p, i) =>
-                p.url ? (
+              {previews.map((p, i) => {
+                const isImage = p.type.startsWith("image/");
+                const isPdf = p.type === "application/pdf";
+                return isImage ? (
                   <div key={i} className="relative group">
                     <img
-                      src={p.url}
+                      src={p.url!}
                       alt={p.name}
                       className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer"
-                      onClick={() => setLightbox(p.url)}
+                      onClick={() => setLightbox({ url: p.url!, type: "image", name: p.name })}
                       title={p.name}
                     />
                     <button
@@ -136,7 +153,7 @@ export function DescriptionWithAttachments({ defaultDescription = "" }: Descript
                     </button>
                     <button
                       type="button"
-                      onClick={() => setLightbox(p.url)}
+                      onClick={() => setLightbox({ url: p.url!, type: "image", name: p.name })}
                       className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <ZoomIn className="h-5 w-5 text-white" />
@@ -146,6 +163,16 @@ export function DescriptionWithAttachments({ defaultDescription = "" }: Descript
                   <div key={i} className="relative flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm group">
                     <FileText className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                     <span className="text-gray-700 dark:text-gray-300 max-w-[140px] truncate">{p.name}</span>
+                    {isPdf && p.url && (
+                      <button
+                        type="button"
+                        onClick={() => setLightbox({ url: p.url!, type: "pdf", name: p.name })}
+                        className="text-gray-400 hover:text-indigo-500 transition-colors"
+                        title="Preview"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => removeFile(i)}
@@ -154,8 +181,8 @@ export function DescriptionWithAttachments({ defaultDescription = "" }: Descript
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                )
-              )}
+                );
+              })}
             </div>
           )}
         </div>
