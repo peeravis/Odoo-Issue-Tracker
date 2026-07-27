@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect, useId } from "react";
 import { ChevronDown, X } from "lucide-react";
-import { MAX_DROPDOWN_OPTIONS } from "@/lib/constants";
 
 type Option = { value: string; label: string };
 
@@ -40,7 +39,7 @@ export function SearchableSelect({
 
   const filtered = search.trim() && !selected
     ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
-    : options.slice(0, MAX_DROPDOWN_OPTIONS);
+    : options;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
