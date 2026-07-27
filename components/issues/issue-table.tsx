@@ -121,6 +121,7 @@ export function IssueTable({ issues, groupBy, users = [] }: IssueTableProps) {
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">Priority</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">Status</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell text-xs uppercase tracking-wide">Assignee</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell text-xs uppercase tracking-wide">Created By</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell text-xs uppercase tracking-wide">Date</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 hidden xl:table-cell text-xs uppercase tracking-wide">Due Date</th>
             </tr>
@@ -135,7 +136,7 @@ export function IssueTable({ issues, groupBy, users = [] }: IssueTableProps) {
                       className="bg-gray-50/80 dark:bg-gray-900/30 cursor-pointer hover:bg-gray-100/80 dark:hover:bg-gray-900/50 transition-colors"
                       onClick={() => toggleGroup(group)}
                     >
-                      <td colSpan={10} className="px-4 py-2.5">
+                      <td colSpan={11} className="px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <motion.div animate={{ rotate: isCollapsed ? -90 : 0 }} transition={{ duration: 0.2 }}>
                             <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
@@ -169,7 +170,7 @@ export function IssueTable({ issues, groupBy, users = [] }: IssueTableProps) {
             })}
             {issues.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-6 py-16 text-center">
+                <td colSpan={11} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center mb-1">
                       <svg className="h-6 w-6 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
