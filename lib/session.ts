@@ -1,8 +1,8 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { getConfig } from "./config";
-import { UnauthorizedError } from "./errors";
 
 export type SessionPayload = {
   userId: string;
@@ -70,6 +70,6 @@ export async function deleteSession() {
 
 export async function requireSession(): Promise<SessionPayload> {
   const session = await getSession();
-  if (!session) throw new UnauthorizedError();
+  if (!session) redirect("/login?expired=1");
   return session;
 }

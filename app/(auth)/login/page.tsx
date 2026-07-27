@@ -10,6 +10,7 @@ function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "";
+  const expired = searchParams.get("expired") === "1";
 
   return (
     <motion.div
@@ -19,6 +20,17 @@ function LoginForm() {
       className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl"
     >
       <h2 className="text-lg font-semibold text-white mb-6">เข้าสู่ระบบ</h2>
+
+      {expired && !state?.error && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="mb-5 flex items-center gap-2.5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-sm text-amber-300"
+        >
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          Session หมดอายุ กรุณาเข้าสู่ระบบใหม่
+        </motion.div>
+      )}
 
       {state?.error && (
         <motion.div
