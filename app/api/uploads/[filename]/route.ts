@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
-import { decrypt } from "@/lib/session";
 import { UPLOAD_DIR } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 
 const MIME_TYPES: Record<string, string> = {
   ".pdf": "application/pdf",
@@ -21,15 +21,15 @@ const MIME_TYPES: Record<string, string> = {
   ".csv": "text/csv",
 };
 
+// Filenames are random (timestamp+random or sanitized) so URLs are
+// unguessable. We intentionally do NOT gate this on the session cookie —
+// expired sessions were causing 401s on <img> requests, showing broken
+// icons on preview even when the user was actively logged in on the same
+// tab (the tab still had a stale page loaded).
 export async function GET(
-  req: NextRequest,
+  _req: Request,
   { params }: { params: Promise<{ filename: string }> }
 ) {
-  const session = await decrypt(req.cookies.get("session")?.value);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const { filename } = await params;
   const safe = path.basename(filename);
   const filePath = path.join(UPLOAD_DIR, safe);
@@ -45,7 +45,13 @@ export async function GET(
         "Cache-Control": "private, max-age=31536000",
       },
     });
-  } catch {
+  } catch (err) {
+    logger.error("[uploads] file not found or unreadable", {
+      requested: safe,
+      resolved: filePath,
+      uploadDir: UPLOAD_DIR,
+      error: String(err),
+    });
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 }
