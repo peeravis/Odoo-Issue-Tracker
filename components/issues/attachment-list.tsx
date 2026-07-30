@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Paperclip, Download, Eye, X } from "lucide-react";
+import { Paperclip, Download, Eye, X, AlertTriangle } from "lucide-react";
 import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 import { formatDate } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ type Attachment = {
   createdAt: Date;
   uploadedById: string;
   uploadedBy: { name: string };
+  missing?: boolean;
 };
 
 interface AttachmentListProps {
@@ -75,7 +76,7 @@ export function AttachmentList({ attachments, sessionUserId, canManage, deleteAc
           const ext = getExt(a.fileUrl);
           const isImage = IMAGE_EXTS.has(ext);
           const isPdf = ext === ".pdf";
-          const canPreview = isImage || isPdf;
+          const canPreview = (isImage || isPdf) && !a.missing;
           const canDelete = a.uploadedById === sessionUserId || canManage;
 
           const openPreview = () =>
@@ -83,15 +84,25 @@ export function AttachmentList({ attachments, sessionUserId, canManage, deleteAc
 
           return (
             <div key={a.id} className="group px-6 py-3 flex items-center gap-3">
-              <Paperclip className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              {a.missing ? (
+                <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+              ) : (
+                <Paperclip className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              )}
               <div className="flex-1 min-w-0">
                 <p
-                  className={`text-sm text-gray-900 dark:text-white truncate ${canPreview ? "cursor-pointer hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" : ""}`}
+                  className={`text-sm truncate ${a.missing ? "text-gray-400 line-through" : "text-gray-900 dark:text-white"} ${canPreview ? "cursor-pointer hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors" : ""}`}
                   onClick={canPreview ? openPreview : undefined}
                 >
                   {a.fileName}
                 </p>
-                <p className="text-xs text-gray-400">{a.uploadedBy.name} · {formatDate(a.createdAt)}</p>
+                <p className="text-xs text-gray-400">
+                  {a.missing ? (
+                    <span className="text-amber-600 dark:text-amber-400 font-medium">ไฟล์หาย — กรุณาอัปโหลดใหม่</span>
+                  ) : (
+                    <>{a.uploadedBy.name} · {formatDate(a.createdAt)}</>
+                  )}
+                </p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {canPreview && (
@@ -103,14 +114,16 @@ export function AttachmentList({ attachments, sessionUserId, canManage, deleteAc
                     <Eye className="h-4 w-4" />
                   </button>
                 )}
-                <a
-                  href={a.fileUrl}
-                  download={a.fileName}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded transition-colors"
-                  title="Download"
-                >
-                  <Download className="h-4 w-4" />
-                </a>
+                {!a.missing && (
+                  <a
+                    href={a.fileUrl}
+                    download={a.fileName}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded transition-colors"
+                    title="Download"
+                  >
+                    <Download className="h-4 w-4" />
+                  </a>
+                )}
                 {canDelete && (
                   <DeleteConfirmButton
                     action={deleteAction.bind(null, a.id)}

@@ -1,7 +1,10 @@
+import { access } from "fs/promises";
+import path from "path";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { UPLOAD_DIR } from "@/lib/constants";
 import { PriorityBadge } from "@/components/issues/priority-badge";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { StatusDropdown } from "@/components/issues/status-dropdown";
@@ -414,7 +417,7 @@ export default async function IssueDetailPage({
               </h2>
             </div>
             <AttachmentList
-              attachments={issue.attachments}
+              attachments={await withMissingFlag(issue.attachments)}
               sessionUserId={session.userId}
               canManage={canManage}
               deleteAction={deleteAttachmentAction}
@@ -560,6 +563,16 @@ function AssigneeRow({ name, extraRoles, href }: { name?: string | null; extraRo
         <Link href={href} className="group">{inner}</Link>
       ) : inner}
     </div>
+  );
+}
+
+async function withMissingFlag<T extends { fileUrl: string }>(attachments: T[]) {
+  return Promise.all(
+    attachments.map(async (a) => {
+      const filePath = path.join(UPLOAD_DIR, path.basename(a.fileUrl));
+      const missing = await access(filePath).then(() => false).catch(() => true);
+      return { ...a, missing };
+    }),
   );
 }
 
