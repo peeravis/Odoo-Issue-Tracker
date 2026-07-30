@@ -1,7 +1,11 @@
+import { config as loadEnv } from "dotenv";
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { stat } from "fs/promises";
 import path from "path";
+
+loadEnv({ path: ".env.local", quiet: true });
+loadEnv({ path: ".env", quiet: true });
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 const prisma = new PrismaClient({
