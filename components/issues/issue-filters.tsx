@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Filter, User, AlertTriangle, Clock, CalendarDays } from "lucide-react";
 import { STATUS_LABELS } from "@/lib/utils";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -25,6 +26,7 @@ interface IssueFiltersProps {
     priority?: string;
     status?: string;
     assigneeId?: string;
+    createdById?: string;
     module?: string;
     issueType?: string;
     department?: string;
@@ -187,6 +189,16 @@ export function IssueFilters({ projects, users, clients, modules, issueTypes, de
             />
           </div>
 
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Created By</label>
+            <SearchableSelect
+              options={users.map((u) => ({ value: u.id, label: u.name }))}
+              placeholder="All"
+              defaultValue={defaults.createdById ?? ""}
+              onChange={(v) => handleSelect("createdById", v)}
+            />
+          </div>
+
           {modules.length > 0 && (
             <div>
               <label className="block text-xs text-gray-500 mb-1">Module</label>
@@ -269,7 +281,7 @@ export function IssueFilters({ projects, users, clients, modules, issueTypes, de
           </div>
 
           <div className="flex items-end gap-2 col-span-2">
-            <a href="/issues" className="btn-secondary flex-1 text-center py-2">Clear All</a>
+            <Link href="/issues" className="btn-secondary flex-1 text-center py-2">Clear All</Link>
           </div>
         </div>
       </div>
