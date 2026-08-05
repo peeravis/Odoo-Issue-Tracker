@@ -19,6 +19,7 @@ interface SearchParams {
   priority?: string;
   status?: string;
   assigneeId?: string;
+  createdById?: string;
   search?: string;
   groupBy?: string;
   from?: string;
@@ -47,7 +48,7 @@ export default async function IssuesPage({
         .then((m) => m.map((x) => x.project));
 
   const projectIds = userProjects.map((p) => p.id);
-  const where = buildIssueWhere(sp, projectIds);
+  const where = buildIssueWhere({ ...sp, createdById: sp.createdById }, projectIds);
   const page = Math.max(1, parseInt(sp.page ?? "1"));
 
   const [totalCount, issues, allUsers, allClients, distinctModules, distinctIssueTypes, distinctDepartments] = await Promise.all([
@@ -80,6 +81,11 @@ export default async function IssuesPage({
   // Build export URL with current filters (exclude page)
   const exportParams = new URLSearchParams();
   Object.entries(sp).forEach(([k, v]) => { if (v && k !== "page") exportParams.set(k, v); });
+
+  // Build back-URL query string to pass into issue rows so the back button restores filters
+  const backParams = new URLSearchParams();
+  Object.entries(sp).forEach(([k, v]) => { if (v) backParams.set(k, v); });
+  const backQuery = backParams.toString();
 
   // Build pagination URLs preserving all other params
   function pageUrl(p: number) {
@@ -131,6 +137,7 @@ export default async function IssuesPage({
             priority: sp.priority,
             status: sp.status,
             assigneeId: sp.assigneeId,
+            createdById: sp.createdById,
             module: sp.module,
             issueType: sp.issueType,
             department: sp.department,
@@ -143,7 +150,7 @@ export default async function IssuesPage({
       </FadeUp>
 
       <FadeUp delay={0.1}>
-        <IssueTable issues={issues} groupBy={groupBy} users={allUsers} />
+        <IssueTable issues={issues} groupBy={groupBy} users={allUsers} backQuery={backQuery} />
       </FadeUp>
 
       {totalPages > 1 && (

@@ -16,6 +16,7 @@ interface IssueTableProps {
   groupBy: string;
   fieldDefs?: { fieldKey: string; label: string }[];
   users?: User[];
+  backQuery?: string;
 }
 
 const GROUP_FIELD_LABELS: Record<string, string> = {
@@ -44,7 +45,7 @@ function getGroupValue(issue: IssueRowData, groupBy: string): string {
   }
 }
 
-export function IssueTable({ issues, groupBy, users = [] }: IssueTableProps) {
+export function IssueTable({ issues, groupBy, users = [], backQuery = "" }: IssueTableProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -162,6 +163,7 @@ export function IssueTable({ issues, groupBy, users = [] }: IssueTableProps) {
                           selected={selected.has(issue.id)}
                           users={users}
                           onToggleSelect={toggleSelect}
+                          backQuery={backQuery}
                         />
                       ))}
                   </AnimatePresence>

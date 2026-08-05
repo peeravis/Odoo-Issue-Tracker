@@ -44,10 +44,12 @@ interface IssueRowProps {
   selected: boolean;
   users: User[];
   onToggleSelect: (id: string) => void;
+  backQuery?: string;
 }
 
-export function IssueRow({ issue, rowIndex, selected, users, onToggleSelect }: IssueRowProps) {
+export function IssueRow({ issue, rowIndex, selected, users, onToggleSelect, backQuery = "" }: IssueRowProps) {
   const issueCode = generateIssueCode(issue.project.code, issue.issueNumber);
+  const issueHref = `/issues/${issue.id}${backQuery ? `?back=${encodeURIComponent(backQuery)}` : ""}`;
 
   return (
     <motion.tr
@@ -75,7 +77,7 @@ export function IssueRow({ issue, rowIndex, selected, users, onToggleSelect }: I
       </td>
       <td className="px-4 py-3">
         <Link
-          href={`/issues/${issue.id}`}
+          href={issueHref}
           className="font-medium text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors break-words"
         >
           {issue.title}

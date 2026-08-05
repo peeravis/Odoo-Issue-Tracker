@@ -26,10 +26,11 @@ export default async function IssueDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ edit?: string; toast?: string }>;
+  searchParams: Promise<{ edit?: string; toast?: string; back?: string }>;
 }) {
   const { id } = await params;
-  const { edit, toast } = await searchParams;
+  const { edit, toast, back } = await searchParams;
+  const backHref = back ? `/issues?${decodeURIComponent(back)}` : "/issues";
 
   const session = await getSession();
   if (!session) return null;
@@ -97,7 +98,7 @@ export default async function IssueDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <Link href={`/issues?projectId=${issue.projectId}`} className="mt-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0">
+          <Link href={backHref} className="mt-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
