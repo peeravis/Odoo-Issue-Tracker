@@ -9,6 +9,7 @@ export interface IssueFilterParams {
   priority?: string | null;
   status?: string | null;
   assigneeId?: string | null;
+  createdById?: string | null;
   search?: string | null;
   from?: string | null;
   to?: string | null;
@@ -36,7 +37,8 @@ export function buildIssueWhere(
   if (filters.module)     where.module      = filters.module;
   if (filters.priority)   where.priority    = filters.priority as IssuePriority;
   if (filters.status)     where.status      = filters.status as IssueStatus;
-  if (filters.assigneeId) where.assigneeId  = filters.assigneeId;
+  if (filters.assigneeId)  where.assigneeId  = filters.assigneeId;
+  if (filters.createdById) where.createdById = filters.createdById;
 
   if (filters.search) {
     where.OR = [
