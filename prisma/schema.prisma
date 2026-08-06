@@ -7,6 +7,198 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  name           String
+  password       String
+  role           String          @default("member")
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  extraRoles     String[]        @default([])
+  activityLogs   ActivityLog[]
+  attachments    Attachment[]
+  comments       Comment[]
+  assignedIssues Issue[]         @relation("AssignedTo")
+  createdIssues  Issue[]         @relation("CreatedBy")
+  loggedIssues   Issue[]         @relation("LoggedBy")
+  modifiedIssues Issue[]         @relation("ModifiedBy")
+  projectMembers ProjectMember[]
+  bugReports     BugReport[]
+}
+
+model ProjectGroup {
+  id        String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  name      String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  projects  Project[]
+}
+
+model Project {
+  id            String                   @id @default(cuid())
+  name          String
+  code          String                   @unique
+  description   String?
+  status        ProjectStatus            @default(active)
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  groupId       String?
+  dropdownItems DropdownMaster[]
+  issues        Issue[]
+  group         ProjectGroup?            @relation(fields: [groupId], references: [id], onUpdate: NoAction)
+  fieldDefs     ProjectFieldDefinition[]
+  members       ProjectMember[]
+  statusConfigs ProjectStatusConfig[]
+}
+
+model ProjectMember {
+  id          String   @id @default(cuid())
+  projectId   String
+  userId      String
+  createdAt   DateTime @default(now())
+  projectRole String   @default("developer")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model Client {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  code        String?
+  contactInfo String?
+  issues      Issue[]
+}
+
+model DropdownMaster {
+  id        String   @id @default(cuid())
+  type      String
+  label     String
+  sortOrder Int      @default(0)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([type, label, projectId])
+  @@unique([type, label])
+}
+
+model ProjectStatusConfig {
+  id        String  @id @default(dbgenerated("(gen_random_uuid())::text"))
+  projectId String
+  statusKey String
+  label     String
+  color     String?
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([projectId, statusKey])
+}
+
+model ProjectFieldDefinition {
+  id         String    @id @default(cuid())
+  projectId  String
+  fieldKey   String
+  label      String
+  fieldType  FieldType @default(text)
+  options    Json?
+  isRequired Boolean   @default(false)
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, fieldKey])
+}
+
+model Issue {
+  id             String        @id @default(cuid())
+  projectId      String
+  issueNumber    Int
+  title          String
+  clientId       String?
+  department     String?
+  issueType      String?
+  module         String?
+  priority       IssuePriority @default(medium)
+  status         IssueStatus   @default(open)
+  solution       String?
+  createdById    String
+  loggedById     String?
+  assigneeId     String?
+  modifiedById   String?
+  dateReported   DateTime?
+  dueDate        DateTime?
+  resolvedAt     DateTime?
+  customFields   Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  lastModifiedAt DateTime      @default(now())
+  description    String?
+  activityLogs   ActivityLog[]
+  attachments    Attachment[]
+  comments       Comment[]
+  assignee       User?         @relation("AssignedTo", fields: [assigneeId], references: [id])
+  client         Client?       @relation(fields: [clientId], references: [id])
+  createdBy      User          @relation("CreatedBy", fields: [createdById], references: [id])
+  loggedBy       User?         @relation("LoggedBy", fields: [loggedById], references: [id])
+  modifiedBy     User?         @relation("ModifiedBy", fields: [modifiedById], references: [id])
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, issueNumber])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  issueId   String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  issueId      String
+  fileName     String
+  fileUrl      String
+  uploadedById String
+  createdAt    DateTime @default(now())
+  issue        Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  issueId   String
+  userId    String
+  action    String
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model RoleDefinition {
+  name        String   @id
+  label       String
+  isSystem    Boolean  @default(false)
+  permissions Json
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
 enum ProjectStatus {
   active
   closed
@@ -38,205 +230,33 @@ enum FieldType {
   url
 }
 
-model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String
-  password    String
-  role        String   @default("member")
-  extraRoles  String[] @default([])
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  projectMembers ProjectMember[]
-  createdIssues  Issue[]         @relation("CreatedBy")
-  loggedIssues   Issue[]         @relation("LoggedBy")
-  assignedIssues Issue[]         @relation("AssignedTo")
-  modifiedIssues Issue[]         @relation("ModifiedBy")
-  comments       Comment[]
-  activityLogs   ActivityLog[]
-  attachments    Attachment[]
+enum BugReportStatus {
+  open
+  in_progress
+  resolved
+  dismissed
 }
 
-model ProjectGroup {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  sortOrder Int       @default(0)
-  createdAt DateTime  @default(now())
+model BugReport {
+  id            String          @id @default(cuid())
+  title         String
+  description   String?
+  priority      String          @default("medium")
+  status        BugReportStatus @default(open)
+  submittedById String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
-  projects Project[]
+  submittedBy User                  @relation(fields: [submittedById], references: [id])
+  attachments BugReportAttachment[]
 }
 
-model Project {
-  id          String        @id @default(cuid())
-  name        String
-  code        String        @unique
-  description String?
-  status      ProjectStatus @default(active)
-  groupId     String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  group         ProjectGroup?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  members       ProjectMember[]
-  issues        Issue[]
-  fieldDefs     ProjectFieldDefinition[]
-  dropdownItems DropdownMaster[]
-  statusConfigs ProjectStatusConfig[]
-}
-
-model ProjectMember {
-  id          String   @id @default(cuid())
-  projectId   String
-  userId      String
-  projectRole String   @default("developer")
-  createdAt   DateTime @default(now())
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([projectId, userId])
-}
-
-model Client {
-  id          String  @id @default(cuid())
-  name        String  @unique
-  code        String?
-  contactInfo String?
-
-  issues Issue[]
-}
-
-model DropdownMaster {
-  id        String  @id @default(cuid())
-  type      String
-  label     String
-  sortOrder Int     @default(0)
-  projectId String?
-
-  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@unique([type, label, projectId])
-}
-
-model ProjectStatusConfig {
-  id        String  @id @default(cuid())
-  projectId String
-  statusKey String
-  label     String
-  color     String?
-  sortOrder Int     @default(0)
-  isActive  Boolean @default(true)
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@unique([projectId, statusKey])
-}
-
-model ProjectFieldDefinition {
-  id         String    @id @default(cuid())
-  projectId  String
-  fieldKey   String
-  label      String
-  fieldType  FieldType @default(text)
-  options    Json?
-  isRequired Boolean   @default(false)
-  sortOrder  Int       @default(0)
-  createdAt  DateTime  @default(now())
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@unique([projectId, fieldKey])
-}
-
-model Issue {
-  id             String        @id @default(cuid())
-  projectId      String
-  issueNumber    Int
-  title          String
-  clientId       String?
-  department     String?
-  issueType      String?
-  module         String?
-  priority       IssuePriority @default(medium)
-  status         IssueStatus   @default(open)
-  description    String?
-  solution       String?
-  createdById    String
-  loggedById     String?
-  assigneeId     String?
-  modifiedById   String?
-  dateReported   DateTime?
-  dueDate        DateTime?
-  resolvedAt     DateTime?
-  customFields   Json?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  lastModifiedAt DateTime      @default(now())
-
-  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client     Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  createdBy  User    @relation("CreatedBy", fields: [createdById], references: [id])
-  loggedBy   User?   @relation("LoggedBy", fields: [loggedById], references: [id])
-  assignee   User?   @relation("AssignedTo", fields: [assigneeId], references: [id])
-  modifiedBy User?   @relation("ModifiedBy", fields: [modifiedById], references: [id])
-
-  comments     Comment[]
-  attachments  Attachment[]
-  activityLogs ActivityLog[]
-
-  @@unique([projectId, issueNumber])
-}
-
-model Comment {
+model BugReportAttachment {
   id        String   @id @default(cuid())
-  issueId   String
-  userId    String
-  content   String
+  reportId  String
+  fileName  String
+  fileUrl   String
   createdAt DateTime @default(now())
 
-  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id])
-}
-
-model Attachment {
-  id           String   @id @default(cuid())
-  issueId      String
-  fileName     String
-  fileUrl      String
-  uploadedById String
-  createdAt    DateTime @default(now())
-
-  issue      Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  uploadedBy User  @relation(fields: [uploadedById], references: [id])
-}
-
-model ActivityLog {
-  id        String   @id @default(cuid())
-  issueId   String
-  userId    String
-  action    String
-  oldValue  String?
-  newValue  String?
-  createdAt DateTime @default(now())
-
-  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id])
-}
-
-model RoleDefinition {
-  name        String   @id
-  label       String
-  isSystem    Boolean  @default(false)
-  permissions Json
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model SystemConfig {
-  key       String   @id
-  value     String
-  updatedAt DateTime @updatedAt @default(now())
+  report BugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 }

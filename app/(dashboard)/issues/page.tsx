@@ -42,10 +42,10 @@ export default async function IssuesPage({
 
   // Determine accessible project IDs
   const userProjects = canViewAll
-    ? await prisma.project.findMany({ select: { id: true, name: true, code: true } })
+    ? await prisma.project.findMany({ where: { status: "active" }, select: { id: true, name: true, code: true } })
     : await prisma.projectMember
-        .findMany({ where: { userId: session.userId }, include: { project: { select: { id: true, name: true, code: true } } } })
-        .then((m) => m.map((x) => x.project));
+        .findMany({ where: { userId: session.userId }, include: { project: { select: { id: true, name: true, code: true, status: true } } } })
+        .then((m) => m.filter((x) => x.project.status === "active").map((x) => x.project));
 
   const projectIds = userProjects.map((p) => p.id);
   const where = buildIssueWhere({ ...sp, createdById: sp.createdById }, projectIds);
