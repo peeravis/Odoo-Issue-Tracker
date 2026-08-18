@@ -141,7 +141,8 @@ export async function testEmailConnection(): Promise<{ ok: boolean; message: str
 
 export async function saveRolePermissions(formData: FormData) {
   await requireAdmin();
-  const roleNames = ((formData.get("roleNames") as string) || "").split(",").filter(Boolean);
+  const roles = await prisma.roleDefinition.findMany({ select: { name: true, isSystem: true } });
+  const roleNames = roles.map((r) => r.name);
   const systemRoles = ["admin", "pm", "member", "rnao", "co", "gl"];
   for (const roleName of roleNames) {
     const label = (formData.get(`label_${roleName}`) as string) || roleName;

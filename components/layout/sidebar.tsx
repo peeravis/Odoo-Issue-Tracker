@@ -13,7 +13,6 @@ import {
   KeyRound,
   Settings2,
   X,
-  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/actions/auth";
@@ -53,7 +52,6 @@ export function Sidebar({
     ...(permissions.canAccessDashboard ? [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : []),
     { href: "/projects", label: "Projects", icon: FolderKanban },
     { href: "/issues", label: "Issues", icon: Bug },
-    ...(permissions.canAccessReportBug ? [{ href: "/report-bug", label: "Report Bug", icon: AlertTriangle }] : []),
     ...(permissions.canManageMasterData ? [{ href: "/master-data", label: "Master Data", icon: Database }] : []),
     ...(permissions.canManageUsers ? [{ href: "/users", label: "Users", icon: Users }] : []),
     ...(permissions.canAccessConfig ? [{ href: "/config", label: "Config", icon: Settings2 }] : []),

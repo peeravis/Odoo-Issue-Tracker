@@ -25,7 +25,6 @@ model User {
   loggedIssues   Issue[]         @relation("LoggedBy")
   modifiedIssues Issue[]         @relation("ModifiedBy")
   projectMembers ProjectMember[]
-  bugReports     BugReport[]
 }
 
 model ProjectGroup {
@@ -148,6 +147,12 @@ model Issue {
   project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, issueNumber])
+  @@index([projectId, status])
+  @@index([projectId, priority])
+  @@index([assigneeId])
+  @@index([createdById])
+  @@index([dueDate])
+  @@index([createdAt])
 }
 
 model Comment {
@@ -230,33 +235,3 @@ enum FieldType {
   url
 }
 
-enum BugReportStatus {
-  open
-  in_progress
-  resolved
-  dismissed
-}
-
-model BugReport {
-  id            String          @id @default(cuid())
-  title         String
-  description   String?
-  priority      String          @default("medium")
-  status        BugReportStatus @default(open)
-  submittedById String
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  submittedBy User                  @relation(fields: [submittedById], references: [id])
-  attachments BugReportAttachment[]
-}
-
-model BugReportAttachment {
-  id        String   @id @default(cuid())
-  reportId  String
-  fileName  String
-  fileUrl   String
-  createdAt DateTime @default(now())
-
-  report BugReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-}

@@ -11,7 +11,6 @@ export type RolePermissions = {
   canManageMasterData: boolean;
   canManageUsers: boolean;
   canAccessConfig: boolean;
-  canAccessReportBug: boolean;
 };
 
 export const PERM_KEYS: (keyof RolePermissions)[] = [
@@ -24,7 +23,6 @@ export const PERM_KEYS: (keyof RolePermissions)[] = [
   "canManageMasterData",
   "canManageUsers",
   "canAccessConfig",
-  "canAccessReportBug",
 ];
 
 export const PERM_LABELS: Record<keyof RolePermissions, string> = {
@@ -37,16 +35,15 @@ export const PERM_LABELS: Record<keyof RolePermissions, string> = {
   canManageMasterData: "จัดการ Master Data",
   canManageUsers: "จัดการ Users",
   canAccessConfig: "Config Settings",
-  canAccessReportBug: "แจ้ง Report Bug",
 };
 
 export const BUILT_IN_PERMISSIONS: Record<string, RolePermissions> = {
-  admin:  { canAccessDashboard: true,  canViewAllProjects: true,  canManageProjects: true,  canCreateIssues: true,  canEditIssues: true,  canExportIssues: true,  canManageMasterData: true,  canManageUsers: true,  canAccessConfig: true,  canAccessReportBug: true  },
-  pm:     { canAccessDashboard: false, canViewAllProjects: true,  canManageProjects: true,  canCreateIssues: true,  canEditIssues: true,  canExportIssues: true,  canManageMasterData: true,  canManageUsers: false, canAccessConfig: false, canAccessReportBug: true  },
-  member: { canAccessDashboard: false, canViewAllProjects: false, canManageProjects: false, canCreateIssues: true,  canEditIssues: true,  canExportIssues: true,  canManageMasterData: false, canManageUsers: false, canAccessConfig: false, canAccessReportBug: true  },
-  rnao:   { canAccessDashboard: false, canViewAllProjects: false, canManageProjects: false, canCreateIssues: false, canEditIssues: false, canExportIssues: true,  canManageMasterData: false, canManageUsers: false, canAccessConfig: false, canAccessReportBug: true  },
-  co:     { canAccessDashboard: false, canViewAllProjects: false, canManageProjects: false, canCreateIssues: false, canEditIssues: false, canExportIssues: true,  canManageMasterData: false, canManageUsers: false, canAccessConfig: false, canAccessReportBug: true  },
-  gl:     { canAccessDashboard: false, canViewAllProjects: false, canManageProjects: false, canCreateIssues: false, canEditIssues: false, canExportIssues: true,  canManageMasterData: false, canManageUsers: false, canAccessConfig: false, canAccessReportBug: true  },
+  admin:  { canAccessDashboard: true,  canViewAllProjects: true,  canManageProjects: true,  canCreateIssues: true,  canEditIssues: true,  canExportIssues: true,  canManageMasterData: true,  canManageUsers: true,  canAccessConfig: true  },
+  pm:     { canAccessDashboard: false, canViewAllProjects: true,  canManageProjects: true,  canCreateIssues: true,  canEditIssues: true,  canExportIssues: true,  canManageMasterData: true,  canManageUsers: false, canAccessConfig: false },
+  member: { canAccessDashboard: false, canViewAllProjects: false, canManageProjects: false, canCreateIssues: true,  canEditIssues: true,  canExportIssues: true,  canManageMasterData: false, canManageUsers: false, canAccessConfig: false },
+  rnao:   { canAccessDashboard: false, canViewAllProjects: false, canManageProjects: false, canCreateIssues: false, canEditIssues: false, canExportIssues: true,  canManageMasterData: false, canManageUsers: false, canAccessConfig: false },
+  co:     { canAccessDashboard: false, canViewAllProjects: false, canManageProjects: false, canCreateIssues: false, canEditIssues: false, canExportIssues: true,  canManageMasterData: false, canManageUsers: false, canAccessConfig: false },
+  gl:     { canAccessDashboard: false, canViewAllProjects: false, canManageProjects: false, canCreateIssues: false, canEditIssues: false, canExportIssues: true,  canManageMasterData: false, canManageUsers: false, canAccessConfig: false },
 };
 
 const EMPTY: RolePermissions = {
@@ -59,7 +56,6 @@ const EMPTY: RolePermissions = {
   canManageMasterData: false,
   canManageUsers: false,
   canAccessConfig: false,
-  canAccessReportBug: false,
 };
 
 // Per-request cache (React cache)
