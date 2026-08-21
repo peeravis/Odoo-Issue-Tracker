@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getPermissions } from "@/lib/permissions";
 import { FolderKanban, Settings, ArrowLeft, Layers, FolderOpen } from "lucide-react";
@@ -15,7 +16,7 @@ export default async function ProjectsPage({
   searchParams: Promise<{ status?: string; groupId?: string }>;
 }) {
   const session = await getSession();
-  if (!session) return null;
+  if (!session) redirect("/login");
 
   const sp = await searchParams;
   const statusFilter = sp.status === "closed" ? "closed" : "active";

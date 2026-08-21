@@ -29,6 +29,8 @@ export function DashboardShell({
   const pathname = usePathname();
 
   useEffect(() => {
+    // Close mobile sidebar when route changes — reacting to external navigation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileOpen(false);
   }, [pathname]);
 

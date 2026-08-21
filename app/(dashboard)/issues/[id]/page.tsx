@@ -2,7 +2,7 @@ import { access } from "fs/promises";
 import path from "path";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { UPLOAD_DIR } from "@/lib/constants";
 import { PriorityBadge } from "@/components/issues/priority-badge";
@@ -33,7 +33,7 @@ export default async function IssueDetailPage({
   const backHref = back ? `/issues?${decodeURIComponent(back)}` : "/issues";
 
   const session = await getSession();
-  if (!session) return null;
+  if (!session) redirect("/login");
 
   const issuePerms = await getPermissions(session.role);
 
@@ -89,7 +89,7 @@ export default async function IssueDetailPage({
   const commentAction = addComment.bind(null, id);
   const uploadAction = uploadAttachment.bind(null, id);
   const deleteAttachmentAction = deleteAttachment.bind(null, id);
-  const canManage = issuePerms.canViewAllProjects;
+  const canManage = issuePerms.canEditIssues;
   const isAdmin = session.role === "admin";
 
   return (

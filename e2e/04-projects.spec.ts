@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 // Remote DB IDs
 const ODOO_GROUP_ID = 'cmredz8vw0000m1xiyw587b4r';
-const SAP_GROUP_ID = 'cmree99j60000j9xinjnoqwir';
 const DEMO_PROJECT_ID = 'cmrn0lpw8000037xiuhk72ny7';
 
 test.describe('Projects — Group View (หน้าแรก)', () => {

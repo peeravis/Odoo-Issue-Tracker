@@ -17,16 +17,14 @@ export function StatusDonutChart({
   const strokeWidth = 26;
   const circumference = 2 * Math.PI * r;
 
-  let cumulativeLen = 0;
-  const arcs = segments
-    .filter((s) => s.count > 0)
-    .map((s) => {
-      const arcLen = (s.count / total) * circumference;
-      // dashoffset starts at circumference*0.25 so segment begins at 12 o'clock
-      const offset = circumference * 0.25 - cumulativeLen;
-      cumulativeLen += arcLen;
-      return { ...s, arcLen, offset };
-    });
+  const visibleSegments = segments.filter((s) => s.count > 0);
+  const arcs = visibleSegments.map((s, i) => {
+    const arcLen = (s.count / total) * circumference;
+    const priorLen = visibleSegments.slice(0, i).reduce((sum, p) => sum + (p.count / total) * circumference, 0);
+    // dashoffset starts at circumference*0.25 so segment begins at 12 o'clock
+    const offset = circumference * 0.25 - priorLen;
+    return { ...s, arcLen, offset };
+  });
 
   return (
     <div className="flex items-center gap-4">

@@ -10,6 +10,7 @@ import { StatusSolutionFields } from "@/components/issues/status-solution-fields
 import { DescriptionWithAttachments } from "@/components/issues/description-with-attachments";
 import { getDropdowns, getAssigneeUsers } from "@/lib/db/dropdowns";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { getConfig } from "@/lib/config";
 
 export default async function NewIssuePage({
   searchParams,
@@ -40,9 +41,14 @@ export default async function NewIssuePage({
         })
         .then((m) => m.filter((x) => x.project.status === "active").map((x) => x.project));
 
-  const selectedProjectId = sp.projectId ?? userProjects[0]?.id ?? "";
+  const defaultProjectId = await getConfig("issue.defaultProjectId");
+  const resolvedDefault =
+    defaultProjectId && userProjects.some((p) => p.id === defaultProjectId)
+      ? defaultProjectId
+      : userProjects[0]?.id ?? "";
+  const selectedProjectId = sp.projectId ?? resolvedDefault;
 
-  const [projectData, assigneeUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
+  const [projectData, assigneeUsers, allClients, masterIssueTypes, masterModules, masterDepartments, defaultPriority] = await Promise.all([
     selectedProjectId
       ? prisma.project.findUnique({
           where: { id: selectedProjectId },
@@ -54,6 +60,7 @@ export default async function NewIssuePage({
     getDropdowns("issueType", selectedProjectId),
     getDropdowns("module", selectedProjectId),
     getDropdowns("department", selectedProjectId),
+    getConfig("issue.defaultPriority"),
   ]);
 
   return (
@@ -140,7 +147,7 @@ export default async function NewIssuePage({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
-            <select name="priority" defaultValue="medium" className="input-base w-full">
+            <select name="priority" defaultValue={defaultPriority || "medium"} className="input-base w-full">
               {["high", "medium", "low"].map((p) => (
                 <option key={p} value={p} className="capitalize">{p}</option>
               ))}

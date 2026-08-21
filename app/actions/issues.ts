@@ -11,7 +11,7 @@ import { canViewAllProjects, generateIssueCode } from "@/lib/utils";
 import { getPermissions } from "@/lib/permissions";
 import { sendAssignmentEmail, sendWaitForCheckEmail, sendResolvedEmail, sendCommentEmail } from "@/lib/mailer";
 import type { IssuePriority, IssueStatus, SessionPayload } from "@/lib/types";
-import { UPLOAD_DIR, MAX_FILE_SIZE, BASE_URL, ALLOWED_ATTACHMENT_TYPES } from "@/lib/constants";
+import { UPLOAD_DIR, MAX_FILE_SIZE, BASE_URL, ALLOWED_ATTACHMENT_TYPES, ALLOWED_ATTACHMENT_EXTENSIONS } from "@/lib/constants";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createIssueSchema, addCommentSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
@@ -27,6 +27,8 @@ async function requireProjectAccess(session: SessionPayload, projectId: string) 
 
 export async function createIssue(formData: FormData) {
   const session = await requireSession();
+  const perms = await getPermissions(session.role);
+  if (!perms.canCreateIssues) throw new ForbiddenError();
 
   const parsed = createIssueSchema.safeParse({
     projectId: formData.get("projectId"),
@@ -39,22 +41,16 @@ export async function createIssue(formData: FormData) {
   if (!parsed.success) throw new ValidationError(parsed.error.issues[0].message);
 
   const { projectId, title, priority, status, dateReported, dueDate } = parsed.data;
+  await requireProjectAccess(session, projectId);
   const clientId = (formData.get("clientId") as string) || null;
   const department = (formData.get("department") as string) || null;
   const issueType = (formData.get("issueType") as string) || null;
-  const module = (formData.get("module") as string) || null;
+  const moduleName = (formData.get("module") as string) || null;
   const description = (formData.get("description") as string) || null;
   const solution = (formData.get("solution") as string) || null;
   const loggedById = (formData.get("loggedById") as string) || null;
   const assigneeId = (formData.get("assigneeId") as string) || null;
   const attachmentFiles = formData.getAll("attachments") as File[];
-
-  // Get next issue number
-  const lastIssue = await prisma.issue.findFirst({
-    where: { projectId },
-    orderBy: { issueNumber: "desc" },
-  });
-  const issueNumber = (lastIssue?.issueNumber ?? 0) + 1;
 
   // Collect custom fields
   const customFields: Record<string, unknown> = {};
@@ -64,26 +60,36 @@ export async function createIssue(formData: FormData) {
     }
   }
 
-  const issue = await prisma.issue.create({
-    data: {
-      projectId,
-      issueNumber,
-      title,
-      clientId: clientId || undefined,
-      department,
-      issueType,
-      module,
-      priority: priority as IssuePriority,
-      status: status as IssueStatus,
-      description,
-      solution,
-      createdById: session.userId,
-      loggedById: loggedById || undefined,
-      assigneeId: assigneeId || undefined,
-      dateReported: dateReported ? new Date(dateReported) : undefined,
-      dueDate: dueDate ? new Date(dueDate) : undefined,
-      customFields: Object.keys(customFields).length ? customFields as Prisma.InputJsonValue : undefined,
-    },
+  // Advisory lock serialises concurrent issue creation per project — prevents duplicate issueNumber
+  const issue = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${projectId}))`;
+    const lastIssue = await tx.issue.findFirst({
+      where: { projectId },
+      orderBy: { issueNumber: "desc" },
+      select: { issueNumber: true },
+    });
+    const issueNumber = (lastIssue?.issueNumber ?? 0) + 1;
+    return tx.issue.create({
+      data: {
+        projectId,
+        issueNumber,
+        title,
+        clientId: clientId || undefined,
+        department,
+        issueType,
+        module: moduleName,
+        priority: priority as IssuePriority,
+        status: status as IssueStatus,
+        description,
+        solution,
+        createdById: session.userId,
+        loggedById: loggedById || undefined,
+        assigneeId: assigneeId || undefined,
+        dateReported: dateReported ? new Date(dateReported) : undefined,
+        dueDate: dueDate ? new Date(dueDate) : undefined,
+        customFields: Object.keys(customFields).length ? customFields as Prisma.InputJsonValue : undefined,
+      },
+    });
   });
 
   await prisma.activityLog.create({
@@ -126,14 +132,14 @@ export async function createIssue(formData: FormData) {
         creatorName: session.name,
         creatorEmail: session.email,
         issueTitle: title,
-        issueCode: generateIssueCode(project.code, issueNumber),
+        issueCode: generateIssueCode(project.code, issue.issueNumber),
         issueUrl: `${BASE_URL}/issues/${issue.id}`,
         projectName: project.name,
         priority,
         status,
         client: client?.name,
         department,
-        module,
+        module: moduleName,
         dueDate: dueDate ? new Date(dueDate) : null,
         description,
       }).catch((err: unknown) => logger.error("[mailer] createIssue failed", { error: String(err) }));
@@ -147,12 +153,14 @@ export async function createIssue(formData: FormData) {
 
 export async function updateIssue(issueId: string, formData: FormData) {
   const session = await requireSession();
+  const perms = await getPermissions(session.role);
+  if (!perms.canEditIssues) throw new ForbiddenError();
 
   const title = formData.get("title") as string;
   const clientId = (formData.get("clientId") as string) || null;
   const department = (formData.get("department") as string) || null;
   const issueType = (formData.get("issueType") as string) || null;
-  const module = (formData.get("module") as string) || null;
+  const moduleName = (formData.get("module") as string) || null;
   const priority = (formData.get("priority") as IssuePriority) || "medium";
   const status = (formData.get("status") as IssueStatus) || "open";
   const description = (formData.get("description") as string) || null;
@@ -185,7 +193,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
       clientId: clientId || null,
       department,
       issueType,
-      module,
+      module: moduleName,
       priority,
       status,
       description,
@@ -259,7 +267,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
         status,
         client: issueWithProject.client?.name,
         department,
-        module,
+        module: moduleName,
         dueDate: dueDate ? new Date(dueDate) : null,
         description,
       }).catch((err: unknown) => logger.error("[mailer] updateIssue assignment failed", { error: String(err) }));
@@ -281,7 +289,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
       priority,
       client: issueWithProject.client?.name,
       department,
-      module,
+      module: moduleName,
       dueDate: dueDate ? new Date(dueDate) : null,
       solution,
     };
@@ -299,6 +307,8 @@ export async function updateIssue(issueId: string, formData: FormData) {
 
 export async function addComment(issueId: string, formData: FormData) {
   const session = await requireSession();
+  const commentPerms = await getPermissions(session.role);
+  if (!commentPerms.canCreateIssues && !commentPerms.canEditIssues) throw new ForbiddenError();
 
   const parsed = addCommentSchema.safeParse({ content: formData.get("content") });
   if (!parsed.success) throw new ValidationError(parsed.error.issues[0].message);
@@ -364,6 +374,8 @@ export async function addComment(issueId: string, formData: FormData) {
 
 export async function updateIssueStatus(issueId: string, status: IssueStatus) {
   const session = await requireSession();
+  const perms = await getPermissions(session.role);
+  if (!perms.canEditIssues) throw new ForbiddenError();
 
   const existing = await prisma.issue.findUnique({
     where: { id: issueId },
@@ -423,6 +435,8 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
 
 export async function resolveIssue(issueId: string, solution: string) {
   const session = await requireSession();
+  const perms = await getPermissions(session.role);
+  if (!perms.canEditIssues) throw new ForbiddenError();
 
   const existing = await prisma.issue.findUnique({
     where: { id: issueId },
@@ -480,6 +494,8 @@ export async function resolveIssue(issueId: string, solution: string) {
 
 export async function updateIssuePriority(issueId: string, priority: IssuePriority) {
   const session = await requireSession();
+  const perms = await getPermissions(session.role);
+  if (!perms.canEditIssues) throw new ForbiddenError();
   const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { priority: true, projectId: true } });
   if (!existing) throw new NotFoundError("Issue");
   await requireProjectAccess(session, existing.projectId);
@@ -496,6 +512,8 @@ export async function updateIssuePriority(issueId: string, priority: IssuePriori
 
 export async function updateIssueAssignee(issueId: string, assigneeId: string | null) {
   const session = await requireSession();
+  const perms = await getPermissions(session.role);
+  if (!perms.canEditIssues) throw new ForbiddenError();
   const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { assigneeId: true, projectId: true } });
   if (!existing) throw new NotFoundError("Issue");
   await requireProjectAccess(session, existing.projectId);
@@ -549,6 +567,8 @@ export async function updateIssueAssignee(issueId: string, assigneeId: string | 
 
 export async function updateIssueDueDate(issueId: string, dueDate: string | null) {
   const session = await requireSession();
+  const perms = await getPermissions(session.role);
+  if (!perms.canEditIssues) throw new ForbiddenError();
   const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { dueDate: true, projectId: true } });
   if (!existing) throw new NotFoundError("Issue");
   await requireProjectAccess(session, existing.projectId);
@@ -573,6 +593,7 @@ export async function bulkUpdateStatus(issueIds: string[], status: IssueStatus) 
   const session = await requireSession();
 
   const bulkPerms = await getPermissions(session.role);
+  if (!bulkPerms.canEditIssues) throw new ForbiddenError();
   if (!bulkPerms.canViewAllProjects) {
     const memberships = await prisma.projectMember.findMany({
       where: { userId: session.userId },
@@ -587,6 +608,12 @@ export async function bulkUpdateStatus(issueIds: string[], status: IssueStatus) 
     if (unauthorizedIds.length > 0) throw new ForbiddenError();
   }
 
+  const prevStatuses = await prisma.issue.findMany({
+    where: { id: { in: issueIds } },
+    select: { id: true, status: true },
+  });
+  const prevMap = new Map(prevStatuses.map((i) => [i.id, i.status]));
+
   await prisma.issue.updateMany({
     where: { id: { in: issueIds } },
     data: { status, modifiedById: session.userId, lastModifiedAt: new Date() },
@@ -597,6 +624,7 @@ export async function bulkUpdateStatus(issueIds: string[], status: IssueStatus) 
       issueId,
       userId: session.userId,
       action: "status_changed",
+      oldValue: prevMap.get(issueId) ?? null,
       newValue: status,
     })),
   });
@@ -606,15 +634,18 @@ export async function bulkUpdateStatus(issueIds: string[], status: IssueStatus) 
 
 export async function uploadAttachment(issueId: string, formData: FormData) {
   const session = await requireSession();
+  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { projectId: true } });
+  if (!existing) throw new NotFoundError("Issue");
+  await requireProjectAccess(session, existing.projectId);
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return;
   if (file.size > MAX_FILE_SIZE) throw new ValidationError("ไฟล์ใหญ่เกินไป (สูงสุด 5 MB)");
   if (!ALLOWED_ATTACHMENT_TYPES.has(file.type)) throw new ValidationError("ประเภทไฟล์ไม่รองรับ");
+  const ext = path.extname(file.name).toLowerCase();
+  if (!ALLOWED_ATTACHMENT_EXTENSIONS.has(ext)) throw new ValidationError("นามสกุลไฟล์ไม่รองรับ");
 
   const bytes = await file.arrayBuffer();
   await mkdir(UPLOAD_DIR, { recursive: true });
-
-  const ext = path.extname(file.name);
   const base = path.basename(file.name, ext).replace(/[^a-zA-Z0-9]/g, "_");
   const fileName = `${Date.now()}-${base}${ext}`;
   await writeFile(path.join(UPLOAD_DIR, fileName), Buffer.from(bytes));
@@ -633,9 +664,9 @@ export async function uploadAttachment(issueId: string, formData: FormData) {
 
 export async function deleteAttachment(issueId: string, attachmentId: string) {
   const session = await requireSession();
-  const att = await prisma.attachment.findUnique({ where: { id: attachmentId } });
+  const att = await prisma.attachment.findUnique({ where: { id: attachmentId }, include: { issue: { select: { projectId: true } } } });
   if (!att) return;
-
+  await requireProjectAccess(session, att.issue.projectId);
   if (att.uploadedById !== session.userId && !canViewAllProjects(session.role)) {
     throw new ForbiddenError();
   }

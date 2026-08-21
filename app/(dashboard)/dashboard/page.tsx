@@ -22,7 +22,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ projectId?: string; from?: string; to?: string }>;
 }) {
   const session = await getSession();
-  if (!session) return null;
+  if (!session) redirect("/login");
   const perms = await getPermissions(session.role);
   if (!perms.canAccessDashboard) redirect("/projects");
 
@@ -56,8 +56,11 @@ export default async function DashboardPage({
   // Combined filter: project + optional date range
   const projectDateFilter = { ...projectFilter, ...dateRangeCond };
 
-  const todayStart = new Date();
+  const now = new Date();
+  const nowMs = now.getTime();
+  const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
+  const monthlyTrendStart = new Date(nowMs - 6 * 30 * 24 * 60 * 60 * 1000);
 
   // Period for the "report" card: use selected range or today
   const reportStart = fromDate ?? todayStart;
@@ -88,7 +91,7 @@ export default async function DashboardPage({
         where: {
           ...projectFilter,
           createdAt: {
-            gte: fromDate ?? new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000),
+            gte: fromDate ?? monthlyTrendStart,
             ...(toDate ? { lte: toDate } : {}),
           },
         },
@@ -174,7 +177,6 @@ export default async function DashboardPage({
   }
 
   // Build 6-month trend (default, or when range > 60 days)
-  const now = new Date();
   const months: { label: string; count: number }[] = [];
   if (!showDailyChart) {
     for (let i = 5; i >= 0; i--) {
@@ -454,7 +456,7 @@ export default async function DashboardPage({
             </div>
             <div className="divide-y divide-red-100 dark:divide-red-800/30">
               {overdueIssues.map((issue) => {
-                const daysOverdue = Math.floor((Date.now() - new Date(issue.dueDate!).getTime()) / (1000 * 60 * 60 * 24));
+                const daysOverdue = Math.floor((nowMs - new Date(issue.dueDate!).getTime()) / (1000 * 60 * 60 * 24));
                 return (
                   <Link
                     key={issue.id}

@@ -16,6 +16,7 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
   "email.fromEmail": process.env.SMTP_FROM ?? "noreply@issuetracker.local",
   "issue.defaultPriority": "medium",
   "issue.defaultStatus": "open",
+  "issue.defaultProjectId": "",
 };
 
 export async function getConfig(key: string): Promise<string> {

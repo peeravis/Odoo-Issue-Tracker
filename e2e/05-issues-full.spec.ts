@@ -129,7 +129,8 @@ test.describe('New Issue Form', () => {
   test('ปุ่ม Cancel กลับหน้า issues', async ({ page }) => {
     await page.goto('/issues/new');
     await page.getByRole('link', { name: 'Cancel' }).click();
-    await expect(page).toHaveURL('/issues');
+    // Cancel returns to /issues, optionally with ?projectId=... (per default project selection)
+    await expect(page).toHaveURL(/\/issues(\?projectId=[^&]+)?$/);
   });
 
   test('submit ฟอร์มว่าง — ไม่ redirect (HTML5 validation)', async ({ page }) => {

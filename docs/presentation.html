@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>คู่มือการใช้งาน Issue Tracker</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2e3348;
+      --accent: #6366f1;
+      --accent2: #818cf8;
+      --text: #e2e4f0;
+      --muted: #8b91aa;
+      --green: #4ade80;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Thai', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* Slideshow */
+    .slideshow {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0;
+      padding: 40px 60px;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      animation: fadeIn 0.3s ease;
+    }
+    .slide.active { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cover slide */
+    .slide-cover {
+      background: linear-gradient(135deg, #0f1117 0%, #1e1040 50%, #0f1117 100%);
+      align-items: center;
+      text-align: center;
+    }
+    .slide-cover .logo-ring {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 0 40px rgba(99,102,241,0.4);
+    }
+    .slide-cover h1 { font-size: 48px; font-weight: 800; margin-bottom: 12px; }
+    .slide-cover h1 span { color: var(--accent2); }
+    .slide-cover p { color: var(--muted); font-size: 18px; }
+    .slide-cover .meta {
+      margin-top: 40px;
+      display: flex; gap: 32px;
+      font-size: 14px; color: var(--muted);
+      flex-wrap: wrap; justify-content: center;
+    }
+    .slide-cover .meta span { display: flex; align-items: center; gap: 6px; }
+    .dot-g { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    .dot-a { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+    /* Layout: split (text left, screenshot right) */
+    .slide-split.active {
+      flex-direction: row;
+      align-items: center;
+      gap: 48px;
+    }
+    .slide-split .text-col {
+      flex: 0 0 340px;
+      min-width: 0;
+    }
+    .slide-split .img-col {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .slide-split .img-col img {
+      max-width: 100%;
+      max-height: 78vh;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      object-fit: contain;
+    }
+
+    /* Overview slide */
+    .slide-overview {
+      align-items: center;
+    }
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 20px;
+      width: 100%;
+      max-width: 900px;
+      margin-top: 32px;
+    }
+    .module-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 16px;
+      text-align: center;
+    }
+    .module-card .icon { font-size: 32px; margin-bottom: 10px; }
+    .module-card .name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .module-card .desc { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* Text styles */
+    .slide-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 10px;
+    }
+    h2 { font-size: 30px; font-weight: 800; line-height: 1.2; margin-bottom: 16px; }
+    .subtitle { color: var(--muted); font-size: 15px; margin-bottom: 28px; line-height: 1.6; }
+
+    ul.feature-list { list-style: none; padding: 0; }
+    ul.feature-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    ul.feature-list li:last-child { border-bottom: none; }
+    ul.feature-list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 7px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(99,102,241,0.15);
+      color: var(--accent2);
+      border: 1px solid rgba(99,102,241,0.3);
+      font-size: 11px; font-weight: 600;
+      padding: 2px 10px; border-radius: 20px;
+      margin-bottom: 8px;
+    }
+
+    /* Navigation */
+    .nav {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(26,29,39,0.9);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      padding: 10px 20px;
+      backdrop-filter: blur(10px);
+      z-index: 100;
+    }
+    .nav-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); padding: 4px 8px; border-radius: 6px;
+      font-size: 18px; transition: all 0.15s;
+    }
+    .nav-btn:hover { background: var(--surface); color: var(--text); }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .slide-counter { font-size: 13px; color: var(--muted); min-width: 60px; text-align: center; }
+    .dots { display: flex; gap: 6px; align-items: center; }
+    .dot-nav {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border); cursor: pointer; transition: all 0.15s;
+      border: none; padding: 0;
+    }
+    .dot-nav.active { background: var(--accent); width: 18px; border-radius: 3px; }
+
+    /* Summary */
+    .slide-summary { align-items: center; text-align: center; }
+    .info-cards {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 20px; width: 100%; max-width: 700px; margin-top: 32px;
+    }
+    .info-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px;
+    }
+    .info-card .label { font-size: 11px; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .info-card .value { font-size: 14px; color: var(--text); word-break: break-all; }
+    code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<div class="slideshow">
+
+  <!-- SLIDE 1: Cover -->
+  <div class="slide slide-cover active" id="slide-1">
+    <div class="logo-ring">🐞</div>
+    <h1>Issue <span>Tracker</span></h1>
+    <p>คู่มือการใช้งานระบบติดตามปัญหา Odoo SCG</p>
+    <div class="meta">
+      <span><span class="dot-g"></span>Production: odoo-issue-log.scg.com</span>
+      <span><span class="dot-a"></span>Platform: Next.js + PostgreSQL</span>
+      <span><span class="dot-a"></span>Updated: สิงหาคม 2026</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: Overview -->
+  <div class="slide slide-overview" id="slide-2">
+    <div class="slide-title">ภาพรวม</div>
+    <h2>ระบบมี 5 โมดูลหลัก</h2>
+    <p style="color:var(--muted);font-size:15px;">ครอบคลุมทุกกระบวนการตั้งแต่บันทึก Issue จนถึงรายงานสรุป</p>
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="icon">📋</div>
+        <div class="name">Issues</div>
+        <div class="desc">บันทึกและติดตามปัญหา</div>
+      </div>
+      <div class="module-card">
+        <div class="icon">📁</div>
+        <div class="name">Projects</div>
+        <div class="desc">จัดกลุ่ม Issue ตาม Project</div>
+      </div>
+      <div class="module-card">
+        <div class="icon">👥</div>
+        <div class="name">Users</div>
+        <div class="desc">จัดการสมาชิกทีม</div>
+      </div>
+      <div class="module-card">
+        <div class="icon">🗄️</div>
+        <div class="name">Master Data</div>
+        <div class="desc">ข้อมูลพื้นฐาน, Dropdown</div>
+      </div>
+      <div class="module-card">
+        <div class="icon">⚙️</div>
+        <div class="name">Config</div>
+        <div class="desc">ตั้งค่าระบบ, Roles, SMTP</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: Login -->
+  <div class="slide slide-split" id="slide-3">
+    <div class="text-col">
+      <div class="slide-title">ขั้นตอนที่ 1</div>
+      <h2>การเข้าสู่ระบบ</h2>
+      <p class="subtitle">เข้าผ่าน URL ที่กำหนด แล้วกรอก Email และ Password</p>
+      <ul class="feature-list">
+        <li>กรอก <strong>Email</strong> และ <strong>Password</strong> ที่ได้รับจากผู้ดูแล</li>
+        <li>กด <strong>เข้าสู่ระบบ</strong> — ระบบตรวจสอบสิทธิ์อัตโนมัติ</li>
+        <li>Session หมดอายุ → ระบบแจ้งเตือนให้ login ใหม่</li>
+        <li>ล็อกอินผิดพลาดหลายครั้ง → ระบบ lock 15 นาที</li>
+        <li>เปลี่ยน password ได้ที่เมนู <strong>โปรไฟล์</strong></li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/01-login.png" alt="Login page" />
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Dashboard -->
+  <div class="slide slide-split" id="slide-4">
+    <div class="text-col">
+      <div class="slide-title">โมดูลหลัก</div>
+      <h2>Dashboard<br>ภาพรวมสถิติ</h2>
+      <p class="subtitle">แสดงสรุปสถานะ Issue และรายงานประจำวัน</p>
+      <ul class="feature-list">
+        <li><strong>Stats Cards</strong> — จำนวน Issue แยกตาม Status</li>
+        <li><strong>Donut Chart</strong> — สัดส่วน Issue แต่ละ Status</li>
+        <li><strong>Daily Report</strong> — Issue ที่อัปเดตวันนี้</li>
+        <li>Filter ตาม Project และช่วงวันที่</li>
+        <li>Export รายงานเป็น Excel ได้</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/02-dashboard.png" alt="Dashboard" />
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Issues List -->
+  <div class="slide slide-split" id="slide-5">
+    <div class="text-col">
+      <div class="slide-title">โมดูล Issues</div>
+      <h2>รายการ Issues</h2>
+      <p class="subtitle">ดูและค้นหา Issue ทั้งหมดที่มีสิทธิ์เข้าถึง</p>
+      <ul class="feature-list">
+        <li>Filter ตาม Project, Client, Status, Priority</li>
+        <li>Filter ตาม Assignee, ประเภทปัญหา, Module</li>
+        <li>Filter ตามวันที่สร้าง และ Due Date</li>
+        <li>ค้นหาด้วย Keyword</li>
+        <li>จัดกลุ่ม (Group By) ตาม Status หรือ Field</li>
+        <li>Export เป็น CSV ได้</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/03-issues-list.png" alt="Issues List" />
+    </div>
+  </div>
+
+  <!-- SLIDE 6: New Issue -->
+  <div class="slide slide-split" id="slide-6">
+    <div class="text-col">
+      <div class="slide-title">โมดูล Issues</div>
+      <h2>สร้าง Issue ใหม่</h2>
+      <p class="subtitle">บันทึกปัญหาใหม่พร้อมรายละเอียดครบถ้วน</p>
+      <ul class="feature-list">
+        <li>เลือก <strong>Project</strong> — โหลด Fields เฉพาะ Project นั้น</li>
+        <li>ระบุ Client, Department, ประเภทปัญหา, Module</li>
+        <li>กำหนด <strong>Priority</strong> และ <strong>Assignee</strong></li>
+        <li>เขียนรายละเอียดปัญหา (รองรับ Markdown)</li>
+        <li>แนบไฟล์ได้ (PDF, รูปภาพ, Excel, Word, ZIP)</li>
+        <li>บันทึกแล้วระบบ redirect ไปหน้ารายละเอียด</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/04-issue-new.png" alt="New Issue Form" />
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Issue Detail -->
+  <div class="slide slide-split" id="slide-7">
+    <div class="text-col">
+      <div class="slide-title">โมดูล Issues</div>
+      <h2>รายละเอียด Issue</h2>
+      <p class="subtitle">ดู แก้ไข และติดตาม Issue แต่ละรายการ</p>
+      <ul class="feature-list">
+        <li>ดูรายละเอียดครบ: Status, Priority, Assignee, วันที่</li>
+        <li>แก้ไข Fields ได้ (กด Edit)</li>
+        <li>เปลี่ยน <strong>Status</strong> ผ่าน Dropdown Workflow</li>
+        <li>เพิ่ม <strong>Comment</strong> แจ้งความคืบหน้า</li>
+        <li>อัปโหลดและดาวน์โหลด <strong>Attachment</strong></li>
+        <li>แสดง Solution Fields เมื่อ Issue ถูกปิด</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/05-issue-detail.png" alt="Issue Detail" />
+    </div>
+  </div>
+
+  <!-- SLIDE 8: Projects -->
+  <div class="slide slide-split" id="slide-8">
+    <div class="text-col">
+      <div class="slide-title">โมดูล Projects</div>
+      <h2>จัดการ Projects</h2>
+      <p class="subtitle">จัดกลุ่ม Issue ตาม Project และ Project Group</p>
+      <ul class="feature-list">
+        <li>แสดงทุก Project จัดกลุ่มตาม <strong>Project Group</strong></li>
+        <li>ดูจำนวน Issue และสมาชิกของแต่ละ Project</li>
+        <li>กรอง Active / Closed Projects</li>
+        <li>สร้าง Project ใหม่ (เฉพาะ Admin/PM)</li>
+        <li>สร้าง Project Group ใหม่ (เฉพาะ Admin)</li>
+        <li>กดเข้า Settings ของแต่ละ Project ได้</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/06-projects.png" alt="Projects List" />
+    </div>
+  </div>
+
+  <!-- SLIDE 9: Project Settings -->
+  <div class="slide slide-split" id="slide-9">
+    <div class="text-col">
+      <div class="slide-title">โมดูล Projects</div>
+      <h2>ตั้งค่า Project</h2>
+      <p class="subtitle">กำหนด Fields, สมาชิก และ Workflow ของแต่ละ Project</p>
+      <ul class="feature-list">
+        <li>เพิ่ม/ลบ/แก้ไข <strong>Custom Fields</strong> เฉพาะ Project</li>
+        <li>จัดการ <strong>สมาชิก</strong> และกำหนด Role (PM/Developer/Viewer)</li>
+        <li>ตั้ง Dropdown Options เฉพาะ Project (Issue Type, Module, Department)</li>
+        <li>ตั้ง <strong>Status Workflow</strong> — แต่ละ Status ต้องกรอก Field อะไรบ้าง</li>
+        <li>ลบ Project (Admin เท่านั้น)</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/07-project-settings.png" alt="Project Settings" />
+    </div>
+  </div>
+
+  <!-- SLIDE 10: Users -->
+  <div class="slide slide-split" id="slide-10">
+    <div class="text-col">
+      <div class="slide-title">โมดูล Users</div>
+      <h2>จัดการผู้ใช้งาน</h2>
+      <p class="subtitle">เพิ่ม แก้ไข และกำหนดสิทธิ์ผู้ใช้ (Admin เท่านั้น)</p>
+      <ul class="feature-list">
+        <li>ดูรายชื่อผู้ใช้ทั้งหมด กรองด้วย Role หรือ Search</li>
+        <li>สร้างผู้ใช้ใหม่ทีละคน หรือ Import จาก CSV/Excel</li>
+        <li>แก้ไขข้อมูล: ชื่อ, Email, Role, สถานะ Active</li>
+        <li>Reset Password (Admin เท่านั้น)</li>
+        <li>เพิ่ม/ลบผู้ใช้ออกจาก Projects</li>
+        <li>Export รายชื่อผู้ใช้</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/08-users.png" alt="Users Management" />
+    </div>
+  </div>
+
+  <!-- SLIDE 11: Master Data + Config -->
+  <div class="slide slide-split" id="slide-11">
+    <div class="text-col">
+      <div class="slide-title">ตั้งค่าระบบ</div>
+      <h2>Master Data<br>& Config</h2>
+      <p class="subtitle">ข้อมูลพื้นฐานและการตั้งค่าระบบ (Admin เท่านั้น)</p>
+      <ul class="feature-list">
+        <li><strong>Master Data</strong> — จัดการ Dropdown global (Issue Type, Module, Department)</li>
+        <li>จัดการ Clients และ Project Groups</li>
+        <li><strong>App Settings</strong> — ชื่อระบบ, Logo</li>
+        <li><strong>Email/SMTP</strong> — ตั้งค่าส่ง Email แจ้งเตือน</li>
+        <li><strong>Roles & Permissions</strong> — สร้าง Role ใหม่, กำหนดสิทธิ์แต่ละ Role</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/09-master-data.png" alt="Master Data" />
+    </div>
+  </div>
+
+  <!-- SLIDE 12: Summary -->
+  <div class="slide slide-summary" id="slide-12">
+    <div class="slide-title">สรุป</div>
+    <h2>พร้อมใช้งานแล้ว</h2>
+    <p style="color:var(--muted);font-size:15px;margin-top:8px;">ข้อมูลสำคัญสำหรับเริ่มต้นใช้งานระบบ</p>
+    <div class="info-cards">
+      <div class="info-card">
+        <div class="label">URL ระบบ</div>
+        <div class="value"><code>odoo-issue-log.scg.com</code></div>
+      </div>
+      <div class="info-card">
+        <div class="label">สิทธิ์ผู้ใช้หลัก</div>
+        <div class="value">admin, pm, member, rnao, co, gl</div>
+      </div>
+      <div class="info-card">
+        <div class="label">ผู้ดูแลระบบ</div>
+        <div class="value">ติดต่อทีม IT เพื่อขอ account</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Export ข้อมูล</div>
+        <div class="value">Issues → CSV · Users → Excel</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Browser แนะนำ</div>
+        <div class="value">Chrome / Edge เวอร์ชันล่าสุด</div>
+      </div>
+      <div class="info-card">
+        <div class="label">ขนาดไฟล์แนบ</div>
+        <div class="value">สูงสุด 5 MB ต่อไฟล์</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation bar -->
+<div class="nav">
+  <button class="nav-btn" id="btn-prev" onclick="changeSlide(-1)">&#8592;</button>
+  <div class="dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 12</span>
+  <button class="nav-btn" id="btn-next" onclick="changeSlide(1)">&#8594;</button>
+</div>
+
+<script>
+  const TOTAL = 12;
+  let current = 1;
+
+  const dotsContainer = document.getElementById('dots');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('button');
+    d.className = 'dot-nav' + (i === 1 ? ' active' : '');
+    d.setAttribute('aria-label', 'Slide ' + i);
+    d.onclick = () => goTo(i);
+    dotsContainer.appendChild(d);
+  }
+
+  function goTo(n) {
+    document.getElementById('slide-' + current).classList.remove('active');
+    document.querySelectorAll('.dot-nav')[current - 1].classList.remove('active');
+    current = Math.max(1, Math.min(TOTAL, n));
+    document.getElementById('slide-' + current).classList.add('active');
+    document.querySelectorAll('.dot-nav')[current - 1].classList.add('active');
+    document.getElementById('counter').textContent = current + ' / ' + TOTAL;
+    document.getElementById('btn-prev').disabled = current === 1;
+    document.getElementById('btn-next').disabled = current === TOTAL;
+  }
+
+  function changeSlide(dir) { goTo(current + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); changeSlide(-1); }
+    if (e.key === 'Home') goTo(1);
+    if (e.key === 'End') goTo(TOTAL);
+  });
+
+  goTo(1);
+</script>
+</body>
+</html>

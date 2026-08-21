@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IssueTable } from "@/components/issues/issue-table";
 import { IssueFilters } from "@/components/issues/issue-filters";
@@ -35,7 +36,7 @@ export default async function IssuesPage({
 }) {
   const sp = await searchParams;
   const session = await getSession();
-  if (!session) return null;
+  if (!session) redirect("/login");
 
   const perms = await getPermissions(session.role);
   const canViewAll = perms.canViewAllProjects;
@@ -51,7 +52,7 @@ export default async function IssuesPage({
   const where = buildIssueWhere({ ...sp, createdById: sp.createdById }, projectIds);
   const page = Math.max(1, parseInt(sp.page ?? "1"));
 
-  const [totalCount, issues, allUsers, allClients, distinctModules, distinctIssueTypes, distinctDepartments] = await Promise.all([
+  const [totalCount, issues, allUsers, allCreatedByUsers, allClients, distinctModules, distinctIssueTypes, distinctDepartments] = await Promise.all([
     prisma.issue.count({ where }),
     prisma.issue.findMany({
       where,
@@ -69,6 +70,12 @@ export default async function IssuesPage({
       },
     }),
     getAssigneeUsers(),
+    prisma.projectMember.findMany({
+      where: { project: { status: "active" } },
+      select: { user: { select: { id: true, name: true } } },
+      distinct: ["userId"],
+      orderBy: { user: { name: "asc" } },
+    }).then((rows) => rows.map((r) => r.user)),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.issue.findMany({ where: { projectId: { in: projectIds }, module: { not: null } }, select: { module: true }, distinct: ["module"], orderBy: { module: "asc" } }),
     prisma.issue.findMany({ where: { projectId: { in: projectIds }, issueType: { not: null } }, select: { issueType: true }, distinct: ["issueType"], orderBy: { issueType: "asc" } }),
@@ -105,17 +112,21 @@ export default async function IssuesPage({
             <p className="text-sm text-gray-400 mt-0.5">{totalCount} issues</p>
           </div>
           <div className="flex gap-2">
-            <a
-              href={`/api/issues/export?${exportParams.toString()}`}
-              className="btn-secondary inline-flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Export
-            </a>
-            <Link href={`/issues/new${sp.projectId ? `?projectId=${sp.projectId}` : ""}`} className="btn-primary inline-flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              New Issue
-            </Link>
+            {perms.canExportIssues && (
+              <a
+                href={`/api/issues/export?${exportParams.toString()}`}
+                className="btn-secondary inline-flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </a>
+            )}
+            {perms.canCreateIssues && (
+              <Link href={`/issues/new${sp.projectId ? `?projectId=${sp.projectId}` : ""}`} className="btn-primary inline-flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                New Issue
+              </Link>
+            )}
           </div>
         </div>
       </FadeUp>
@@ -125,6 +136,7 @@ export default async function IssuesPage({
         <IssueFilters
           projects={userProjects}
           users={allUsers}
+          createdByUsers={allCreatedByUsers}
           clients={allClients}
           modules={distinctModules.map((r) => r.module!)}
           issueTypes={distinctIssueTypes.map((r) => r.issueType!)}

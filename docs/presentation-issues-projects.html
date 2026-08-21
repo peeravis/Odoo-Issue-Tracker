@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>คู่มือ Issues & Projects — Issue Tracker</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2e3348;
+      --accent: #6366f1;
+      --accent2: #818cf8;
+      --text: #e2e4f0;
+      --muted: #8b91aa;
+      --green: #4ade80;
+      --orange: #fb923c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Thai', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .slideshow { position: relative; width: 100vw; height: 100vh; }
+
+    .slide {
+      display: none;
+      width: 100%; height: 100%;
+      position: absolute; top: 0; left: 0;
+      padding: 40px 60px;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      animation: fadeIn 0.3s ease;
+    }
+    .slide.active { display: flex; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* accent left bar */
+    .accent-bar {
+      position: absolute; left: 0; top: 0;
+      width: 5px; height: 100%;
+    }
+
+    /* ── Cover ── */
+    .slide-cover {
+      background: linear-gradient(135deg, #0f1117 0%, #1a1040 50%, #0f1117 100%);
+      align-items: center; text-align: center; flex-direction: column;
+    }
+    .cover-icon {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; margin-bottom: 24px;
+      box-shadow: 0 0 48px rgba(99,102,241,0.5);
+    }
+    .slide-cover h1 { font-size: 44px; font-weight: 800; line-height: 1.15; margin-bottom: 10px; }
+    .slide-cover h1 em { font-style: normal; color: var(--accent2); }
+    .slide-cover .tagline { color: var(--muted); font-size: 16px; }
+    .chips { display: flex; gap: 12px; margin-top: 36px; flex-wrap: wrap; justify-content: center; }
+    .chip {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 16px;
+      font-size: 12px; color: var(--muted);
+    }
+    .chip b { color: var(--text); }
+
+    /* ── Flow slide (cover variant showing user journey) ── */
+    .slide-flow {
+      align-items: center; flex-direction: column; justify-content: center;
+    }
+    .flow-row {
+      display: flex; align-items: center; gap: 0;
+      margin-top: 36px; flex-wrap: nowrap;
+    }
+    .flow-step {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 22px; text-align: center;
+      min-width: 130px;
+    }
+    .flow-step .ficon { font-size: 28px; margin-bottom: 8px; }
+    .flow-step .fname { font-size: 13px; font-weight: 700; color: var(--text); }
+    .flow-step .fdesc { font-size: 10px; color: var(--muted); margin-top: 3px; }
+    .flow-arrow { font-size: 22px; color: var(--muted); padding: 0 10px; flex-shrink: 0; }
+    .flow-step.active-step { border-color: var(--accent); box-shadow: 0 0 16px rgba(99,102,241,0.3); }
+
+    /* ── Split layout ── */
+    .slide-split.active {
+      flex-direction: row;
+      align-items: center;
+      gap: 0;
+    }
+    .text-col {
+      flex: 0 0 380px;
+      padding-right: 40px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .img-col {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .img-col img {
+      max-width: 100%; max-height: 80vh;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+      object-fit: contain;
+    }
+
+    /* step badge inside slide */
+    .step-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 20px; padding: 4px 14px;
+      font-size: 11px; font-weight: 700; color: var(--accent2);
+      margin-bottom: 12px;
+    }
+    .step-num {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      font-size: 10px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    h2 { font-size: 28px; font-weight: 800; line-height: 1.2; margin-bottom: 8px; }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
+
+    /* ── Feature list ── */
+    .flist { list-style: none; padding: 0; }
+    .flist li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13.5px; line-height: 1.5; color: var(--text);
+    }
+    .flist li:last-child { border-bottom: none; }
+    .flist li .bul {
+      flex-shrink: 0; margin-top: 7px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+    }
+    .flist li strong { color: var(--accent2); font-weight: 600; }
+
+    /* ── Summary ── */
+    .slide-summary { align-items: center; flex-direction: column; }
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; width: 100%; max-width: 820px; margin-top: 24px;
+    }
+    .sum-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+    }
+    .sum-card .slabel {
+      font-size: 9px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+    }
+    .sum-card .sval { font-size: 13px; color: var(--text); line-height: 1.5; }
+    .sum-card .sval b { color: var(--accent2); }
+    code { background: rgba(255,255,255,0.07); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+
+    /* ── Navigation ── */
+    .nav {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 14px;
+      background: rgba(26,29,39,0.92); border: 1px solid var(--border);
+      border-radius: 40px; padding: 8px 18px;
+      backdrop-filter: blur(10px); z-index: 100;
+    }
+    .nav-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 18px;
+      padding: 2px 6px; border-radius: 6px; transition: all 0.15s;
+    }
+    .nav-btn:hover { background: var(--surface); color: var(--text); }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .counter { font-size: 12px; color: var(--muted); min-width: 44px; text-align: center; }
+    .dots { display: flex; gap: 5px; align-items: center; }
+    .dn {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border); cursor: pointer;
+      border: none; padding: 0; transition: all 0.15s;
+    }
+    .dn.active { background: var(--accent); width: 16px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="slideshow">
+
+  <!-- ─── SLIDE 1: COVER ─── -->
+  <div class="slide slide-cover active" id="s1">
+    <div class="cover-icon">🐞</div>
+    <h1>Issues &amp; <em>Projects</em></h1>
+    <p class="tagline">คู่มือการใช้งาน — Issue Tracker SCG</p>
+    <div class="chips">
+      <div class="chip"><b>📁 Projects</b> — หน้าแรกที่ Member เห็น</div>
+      <div class="chip"><b>📋 Issues</b> — บันทึกและติดตามปัญหา</div>
+      <div class="chip">URL: <b>odoo-issue-log.scg.com</b></div>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 2: USER FLOW OVERVIEW ─── -->
+  <div class="slide slide-flow" id="s2">
+    <div class="accent-bar" style="background:var(--accent);"></div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">ขั้นตอนการใช้งาน Member</div>
+    <h2 style="margin-top:10px;font-size:32px;">Flow การใช้งาน</h2>
+    <p style="color:var(--muted);font-size:14px;">Member login แล้วจะเจอหน้า Projects ก่อนเสมอ</p>
+    <div class="flow-row">
+      <div class="flow-step">
+        <div class="ficon">🔐</div>
+        <div class="fname">Login</div>
+        <div class="fdesc">กรอก Email &amp; Password</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step active-step">
+        <div class="ficon">📁</div>
+        <div class="fname">Projects</div>
+        <div class="fdesc">หน้าแรก — เลือก Project</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="ficon">📋</div>
+        <div class="fname">Issues</div>
+        <div class="fdesc">รายการ Issue ของ Project</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="ficon">🔍</div>
+        <div class="fname">รายละเอียด</div>
+        <div class="fdesc">ดู / แก้ไข / Comment</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="ficon">✅</div>
+        <div class="fname">ปิด Issue</div>
+        <div class="fdesc">เปลี่ยน Status → Closed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 3: LOGIN ─── -->
+  <div class="slide slide-split" id="s3">
+    <div class="accent-bar" style="background:var(--accent);"></div>
+    <div class="text-col">
+      <div class="step-badge"><span class="step-num">1</span>ขั้นตอนแรก</div>
+      <h2>การเข้าสู่ระบบ</h2>
+      <p class="sub">เปิด Browser ไปที่ URL ระบบ กรอก Email และ Password</p>
+      <ul class="flist">
+        <li><span class="bul"></span>กรอก <strong>Email</strong> ที่ได้รับจากผู้ดูแลระบบ</li>
+        <li><span class="bul"></span>รหัสผ่านครั้งแรก: <strong><code>Scg@1234</code></strong></li>
+        <li><span class="bul"></span>กด เข้าสู่ระบบ → redirect ไป <strong>หน้า Projects</strong> อัตโนมัติ</li>
+        <li><span class="bul"></span><strong>เปลี่ยน Password ทันที</strong> หลัง login ครั้งแรก ที่เมนู โปรไฟล์ มุมล่างซ้าย</li>
+        <li><span class="bul"></span>Session หมดอายุ → แจ้งเตือนให้ login ใหม่</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/01-login.png" alt="Login" />
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 4: PROJECTS LIST (landing page) ─── -->
+  <div class="slide slide-split" id="s4">
+    <div class="accent-bar" style="background:var(--green);"></div>
+    <div class="text-col">
+      <div class="step-badge" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:var(--green);">
+        <span class="step-num" style="background:var(--green);">2</span>หน้าแรกหลัง Login
+      </div>
+      <h2>เลือก Project</h2>
+      <p class="sub">Member จะเจอหน้า Projects ก่อนเสมอ — เลือก Project ที่ต้องการทำงาน</p>
+      <ul class="flist">
+        <li><span class="bul" style="background:var(--green);"></span>แสดงเฉพาะ Project ที่ตนเองเป็น <strong>สมาชิก</strong></li>
+        <li><span class="bul" style="background:var(--green);"></span>จัดกลุ่มตาม <strong>Project Group</strong> (Odoo, SAP ฯลฯ)</li>
+        <li><span class="bul" style="background:var(--green);"></span>ดูจำนวน Issue และ <strong>สมาชิก</strong> ของแต่ละ Project</li>
+        <li><span class="bul" style="background:var(--green);"></span>คลิกชื่อ Project → เข้าดู <strong>Issues ของ Project นั้น</strong></li>
+        <li><span class="bul" style="background:var(--green);"></span>กรองดู <strong>Active</strong> หรือ Closed Projects</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/06-projects.png" alt="Projects" />
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 5: ISSUES LIST (filtered by project) ─── -->
+  <div class="slide slide-split" id="s5">
+    <div class="accent-bar" style="background:var(--orange);"></div>
+    <div class="text-col">
+      <div class="step-badge" style="background:rgba(251,146,60,0.1);border-color:rgba(251,146,60,0.3);color:var(--orange);">
+        <span class="step-num" style="background:var(--orange);">3</span>หลังเลือก Project
+      </div>
+      <h2>รายการ Issues</h2>
+      <p class="sub">ระบบแสดง Issues ของ Project ที่เลือก — กรองและค้นหาเพิ่มเติมได้</p>
+      <ul class="flist">
+        <li><span class="bul" style="background:var(--orange);"></span>เห็นเฉพาะ Issue ของ <strong>Project นั้น</strong></li>
+        <li><span class="bul" style="background:var(--orange);"></span>Filter เพิ่มได้: Status, Priority, <strong>Assignee</strong>, Module</li>
+        <li><span class="bul" style="background:var(--orange);"></span>Filter ตามวันที่สร้าง และ <strong>Due Date</strong></li>
+        <li><span class="bul" style="background:var(--orange);"></span>ค้นหาด้วย <strong>Keyword</strong></li>
+        <li><span class="bul" style="background:var(--orange);"></span>กด <strong>+ สร้าง Issue</strong> เพื่อสร้างใหม่</li>
+        <li><span class="bul" style="background:var(--orange);"></span>คลิกที่ Issue → เข้าดูรายละเอียด</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/03-issues-list.png" alt="Issues List" />
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 6: NEW ISSUE ─── -->
+  <div class="slide slide-split" id="s6">
+    <div class="accent-bar" style="background:var(--orange);"></div>
+    <div class="text-col">
+      <div class="step-badge" style="background:rgba(251,146,60,0.1);border-color:rgba(251,146,60,0.3);color:var(--orange);">
+        <span class="step-num" style="background:var(--orange);">4</span>สร้าง Issue ใหม่
+      </div>
+      <h2>กรอกข้อมูล Issue</h2>
+      <p class="sub">คลิก <code>+ สร้าง Issue</code> แล้วกรอกรายละเอียดให้ครบ</p>
+      <ul class="flist">
+        <li><span class="bul" style="background:var(--orange);"></span>Project ถูกเลือกอัตโนมัติจาก Project ที่เข้ามา</li>
+        <li><span class="bul" style="background:var(--orange);"></span>ระบุ <strong>Client</strong>, Department, ประเภทปัญหา, Module</li>
+        <li><span class="bul" style="background:var(--orange);"></span>กำหนด <strong>Priority</strong> และ <strong>Assignee</strong></li>
+        <li><span class="bul" style="background:var(--orange);"></span>กรอกรายละเอียดปัญหา รองรับ <strong>Markdown</strong></li>
+        <li><span class="bul" style="background:var(--orange);"></span>แนบไฟล์ได้: PDF, รูปภาพ, Excel, Word, ZIP (สูงสุด 5 MB)</li>
+        <li><span class="bul" style="background:var(--orange);"></span>กด <strong>บันทึก</strong> → ระบบพาไปหน้ารายละเอียด</li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/04-issue-new.png" alt="New Issue" />
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 7: ISSUE DETAIL ─── -->
+  <div class="slide slide-split" id="s7">
+    <div class="accent-bar" style="background:var(--orange);"></div>
+    <div class="text-col">
+      <div class="step-badge" style="background:rgba(251,146,60,0.1);border-color:rgba(251,146,60,0.3);color:var(--orange);">
+        <span class="step-num" style="background:var(--orange);">5</span>ติดตาม Issue
+      </div>
+      <h2>รายละเอียด Issue</h2>
+      <p class="sub">คลิก Issue ใดก็ได้จากรายการเพื่อดูรายละเอียดและอัปเดต</p>
+      <ul class="flist">
+        <li><span class="bul" style="background:var(--orange);"></span>ดูข้อมูลครบ: Status, Priority, Assignee, วันที่</li>
+        <li><span class="bul" style="background:var(--orange);"></span>กด <strong>Edit</strong> เพื่อแก้ไข Fields</li>
+        <li><span class="bul" style="background:var(--orange);"></span>เปลี่ยน <strong>Status</strong> ผ่าน Dropdown ตาม Workflow</li>
+        <li><span class="bul" style="background:var(--orange);"></span>เพิ่ม <strong>Comment</strong> แจ้งความคืบหน้า</li>
+        <li><span class="bul" style="background:var(--orange);"></span>อัปโหลด / ดาวน์โหลด <strong>Attachment</strong></li>
+        <li><span class="bul" style="background:var(--orange);"></span>เมื่อปิด Issue ระบบแสดง <strong>Solution Fields</strong></li>
+      </ul>
+    </div>
+    <div class="img-col">
+      <img src="screenshots/05-issue-detail.png" alt="Issue Detail" />
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 8: SUMMARY ─── -->
+  <div class="slide slide-summary" id="s8">
+    <div class="accent-bar" style="background:linear-gradient(to bottom,var(--accent),var(--green));"></div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">สรุป</div>
+    <h2 style="font-size:32px;">ขั้นตอนการใช้งานสำหรับ Member</h2>
+    <p style="color:var(--muted);font-size:13px;margin-top:6px;">จำ 5 ขั้นตอนนี้ก็พอ</p>
+    <div class="summary-grid">
+      <div class="sum-card">
+        <div class="slabel">① Login</div>
+        <div class="sval">ไปที่ <code>odoo-issue-log.scg.com</code><br/>Password ครั้งแรก: <b><code>Scg@1234</code></b></div>
+      </div>
+      <div class="sum-card">
+        <div class="slabel">② เลือก Project</div>
+        <div class="sval">หน้าแรกจะเป็น <b>Projects</b><br/>คลิกชื่อ Project ที่ต้องการ</div>
+      </div>
+      <div class="sum-card">
+        <div class="slabel">③ ดู Issues</div>
+        <div class="sval">เห็น Issue ของ Project<br/>กรองด้วย <b>Filter / Search</b></div>
+      </div>
+      <div class="sum-card">
+        <div class="slabel">④ สร้าง Issue ใหม่</div>
+        <div class="sval">กด <b>+ สร้าง Issue</b><br/>กรอกข้อมูลแล้วบันทึก</div>
+      </div>
+      <div class="sum-card">
+        <div class="slabel">⑤ อัปเดต Issue</div>
+        <div class="sval">คลิก Issue → แก้ไข Status<br/>เพิ่ม <b>Comment / Attachment</b></div>
+      </div>
+      <div class="sum-card">
+        <div class="slabel">⑥ Export</div>
+        <div class="sval">กด Filter → <b>Export CSV</b><br/>ดาวน์โหลดรายการทั้งหมด</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── Navigation ─── -->
+<div class="nav">
+  <button class="nav-btn" id="btn-prev" onclick="go(-1)">&#8592;</button>
+  <div class="dots" id="dots"></div>
+  <span class="counter" id="counter">1 / 8</span>
+  <button class="nav-btn" id="btn-next" onclick="go(1)">&#8594;</button>
+</div>
+
+<script>
+  const TOTAL = 8;
+  let cur = 1;
+
+  const dotsEl = document.getElementById('dots');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('button');
+    d.className = 'dn' + (i === 1 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    document.getElementById('s' + cur).classList.remove('active');
+    document.querySelectorAll('.dn')[cur - 1].classList.remove('active');
+    cur = Math.max(1, Math.min(TOTAL, n));
+    document.getElementById('s' + cur).classList.add('active');
+    document.querySelectorAll('.dn')[cur - 1].classList.add('active');
+    document.getElementById('counter').textContent = cur + ' / ' + TOTAL;
+    document.getElementById('btn-prev').disabled = cur === 1;
+    document.getElementById('btn-next').disabled = cur === TOTAL;
+  }
+
+  function go(d) { goTo(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+    if (e.key === 'Home') goTo(1);
+    if (e.key === 'End') goTo(TOTAL);
+  });
+
+  goTo(1);
+</script>
+</body>
+</html>

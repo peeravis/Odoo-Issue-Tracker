@@ -14,6 +14,7 @@ interface Client { id: string; name: string }
 interface IssueFiltersProps {
   projects: Project[];
   users: UserItem[];
+  createdByUsers: UserItem[];
   clients: Client[];
   modules: string[];
   issueTypes: string[];
@@ -43,7 +44,7 @@ const DUE_PRESETS = [
   { key: "week", label: "Due This Week", icon: CalendarDays, color: "text-blue-500 border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800" },
 ];
 
-export function IssueFilters({ projects, users, clients, modules, issueTypes, departments, sessionUserId, defaults }: IssueFiltersProps) {
+export function IssueFilters({ projects, users, createdByUsers, clients, modules, issueTypes, departments, sessionUserId, defaults }: IssueFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,7 +193,7 @@ export function IssueFilters({ projects, users, clients, modules, issueTypes, de
           <div>
             <label className="block text-xs text-gray-500 mb-1">Created By</label>
             <SearchableSelect
-              options={users.map((u) => ({ value: u.id, label: u.name }))}
+              options={createdByUsers.map((u) => ({ value: u.id, label: u.name }))}
               placeholder="All"
               defaultValue={defaults.createdById ?? ""}
               onChange={(v) => handleSelect("createdById", v)}

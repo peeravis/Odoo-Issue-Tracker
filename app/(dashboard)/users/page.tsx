@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getPermissions } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
 import { FadeUp } from "@/components/ui/motion";
+import Link from "next/link";
 import { CheckCircle, XCircle, Download, Users } from "lucide-react";
 import { CreateUserDialog } from "@/components/users/create-user-dialog";
 import { ImportUsersButton } from "@/components/users/import-users-button";
@@ -98,7 +99,7 @@ export default async function UsersPage({
             <div className="flex gap-2">
               <button type="submit" className="btn-primary">ค้นหา</button>
               {(sp.search || sp.role) && (
-                <a href="/users" className="btn-secondary">ล้าง</a>
+                <Link href="/users" className="btn-secondary">ล้าง</Link>
               )}
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { getConfigs, CONFIG_DEFAULTS } from "@/lib/config";
+import { prisma } from "@/lib/prisma";
 import { saveAppConfig, saveEmailConfig, saveIssueDefaults, removeLogo, saveRolePermissions, createRole, deleteRole } from "@/app/actions/config";
 import { TestEmailButton } from "@/components/config/test-email-button";
 import { LogoUploadForm } from "@/components/config/logo-upload-form";
@@ -33,9 +34,10 @@ export default async function ConfigPage({
   const tab: Tab = (TABS.find((t) => t.key === sp.tab)?.key ?? "app") as Tab;
   const saved = sp.saved === "1";
 
-  const [cfg, allRoles] = await Promise.all([
+  const [cfg, allRoles, allProjects] = await Promise.all([
     getConfigs(Object.keys(CONFIG_DEFAULTS)),
     getAllRoles(),
+    prisma.project.findMany({ where: { status: "active" }, select: { id: true, name: true, code: true }, orderBy: { name: "asc" } }),
   ]);
 
   return (
@@ -155,11 +157,11 @@ export default async function ConfigPage({
                   <input
                     type="password"
                     name="email.smtpPass"
-                    defaultValue={cfg["email.smtpPass"] ? "••••••••" : ""}
-                    placeholder="App password หรือ SMTP password"
+                    defaultValue=""
+                    placeholder={cfg["email.smtpPass"] ? "••••••••  (มีรหัสผ่านอยู่แล้ว)" : "App password หรือ SMTP password"}
                     className="input-base w-full"
                   />
-                  {cfg["email.smtpPass"] && <p className="text-xs text-gray-400 mt-1">มีรหัสผ่านบันทึกอยู่แล้ว — เว้นว่างเพื่อคงไว้</p>}
+                  {cfg["email.smtpPass"] && <p className="text-xs text-gray-400 mt-1">เว้นว่างเพื่อคงรหัสผ่านเดิมไว้</p>}
                 </div>
                 <Field label="From Name" name="email.fromName" defaultValue={cfg["email.fromName"]} placeholder="Issue Tracker" />
                 <Field label="From Email" name="email.fromEmail" defaultValue={cfg["email.fromEmail"]} placeholder="noreply@yourdomain.com" />
@@ -191,6 +193,16 @@ export default async function ConfigPage({
                     <option value="open">Open</option>
                     <option value="in_progress">In Progress</option>
                   </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Default Project</label>
+                  <select name="issue.defaultProjectId" defaultValue={cfg["issue.defaultProjectId"]} className="input-base w-full">
+                    <option value="">-- ไม่กำหนด (ใช้ตัวแรกในรายการ) --</option>
+                    {allProjects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Project ที่ถูก pre-select เมื่อเปิดหน้า New Issue</p>
                 </div>
               </div>
               <SaveButton />

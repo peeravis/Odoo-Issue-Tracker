@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/session";
+import { getPermissions } from "@/lib/permissions";
 import { generateIssueCode, STATUS_LABELS, PRIORITY_LABELS, canViewAllProjects } from "@/lib/utils";
 import { format } from "date-fns";
 import type { IssueStatus } from "@/lib/types";
@@ -92,6 +93,8 @@ function styleTableHeader(row: ExcelJS.Row, numCols: number) {
 export async function GET(request: NextRequest) {
   const session = await decrypt(request.cookies.get("session")?.value);
   if (!session) return new Response("Unauthorized", { status: 401 });
+  const exportPerms = await getPermissions(session.role);
+  if (!exportPerms.canExportIssues) return new Response("Forbidden", { status: 403 });
 
   const sp = request.nextUrl.searchParams;
   const projectId = sp.get("projectId");

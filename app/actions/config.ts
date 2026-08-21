@@ -93,6 +93,7 @@ export async function saveIssueDefaults(formData: FormData) {
   await upsertMany({
     "issue.defaultPriority": (formData.get("issue.defaultPriority") as string) || "medium",
     "issue.defaultStatus": (formData.get("issue.defaultStatus") as string) || "open",
+    "issue.defaultProjectId": (formData.get("issue.defaultProjectId") as string) || "",
   });
   revalidatePath("/config");
   redirect("/config?tab=issues&saved=1");

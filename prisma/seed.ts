@@ -22,13 +22,46 @@ async function main() {
 
   console.log("Admin user created:", admin.email);
 
+  // Fixed IDs used by e2e tests (04-projects, 05-issues-full)
+  const ODOO_GROUP_ID = "cmredz8vw0000m1xiyw587b4r";
+  const SAP_GROUP_ID = "cmree99j60000j9xinjnoqwir";
+  const DEMO_PROJECT_ID = "cmrn0lpw8000037xiuhk72ny7";
+
+  // Clean up any prior "DEMO" project so we can recreate under DEMO01/Odoo cleanly
+  await prisma.project.deleteMany({ where: { code: { in: ["DEMO"] } } });
+
+  const odooGroup = await prisma.projectGroup.upsert({
+    where: { id: ODOO_GROUP_ID },
+    update: { name: "Odoo", sortOrder: 0 },
+    create: { id: ODOO_GROUP_ID, name: "Odoo", sortOrder: 0 },
+  });
+
+  await prisma.projectGroup.upsert({
+    where: { id: SAP_GROUP_ID },
+    update: { name: "SAP", sortOrder: 1 },
+    create: { id: SAP_GROUP_ID, name: "SAP", sortOrder: 1 },
+  });
+
   const project = await prisma.project.upsert({
-    where: { code: "DEMO" },
-    update: {},
+    where: { id: DEMO_PROJECT_ID },
+    update: { name: "Demo Project", code: "DEMO01", groupId: odooGroup.id },
     create: {
+      id: DEMO_PROJECT_ID,
       name: "Demo Project",
-      code: "DEMO",
+      code: "DEMO01",
       description: "Demo project for testing",
+      groupId: odooGroup.id,
+    },
+  });
+
+  await prisma.project.upsert({
+    where: { code: "ODOO01" },
+    update: { name: "Odoo Upgrade Phase 1", groupId: odooGroup.id },
+    create: {
+      name: "Odoo Upgrade Phase 1",
+      code: "ODOO01",
+      description: "Upgrade Odoo from v16 to v18",
+      groupId: odooGroup.id,
     },
   });
 

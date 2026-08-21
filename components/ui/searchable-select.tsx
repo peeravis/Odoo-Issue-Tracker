@@ -32,6 +32,7 @@ export function SearchableSelect({
   // Sync state when defaultValue changes (e.g. URL param update via router.push)
   useEffect(() => {
     const opt = findOption(defaultValue);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelected(opt);
     setSearch(opt?.label ?? "");
   // eslint-disable-next-line react-hooks/exhaustive-deps

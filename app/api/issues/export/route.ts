@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/session";
+import { getPermissions } from "@/lib/permissions";
 import { generateIssueCode, PRIORITY_LABELS, STATUS_LABELS, canViewAllProjects } from "@/lib/utils";
 import { format } from "date-fns";
 import type { IssuePriority, IssueStatus } from "@/lib/types";
@@ -13,6 +14,10 @@ export async function GET(request: NextRequest) {
   const session = await decrypt(request.cookies.get("session")?.value);
   if (!session) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const exportPerms = await getPermissions(session.role);
+  if (!exportPerms.canExportIssues) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const sp = request.nextUrl.searchParams;
@@ -34,8 +39,9 @@ export async function GET(request: NextRequest) {
       module:     sp.get("module"),
       priority:   sp.get("priority"),
       status:     sp.get("status"),
-      assigneeId: sp.get("assigneeId"),
-      search:     sp.get("search"),
+      assigneeId:  sp.get("assigneeId"),
+      createdById: sp.get("createdById"),
+      search:      sp.get("search"),
       from:       sp.get("from"),
       to:         sp.get("to"),
     },

@@ -10,6 +10,8 @@ export function DarkModeToggle() {
     const saved = localStorage.getItem("theme");
     if (saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
       document.documentElement.classList.add("dark");
+      // Initialize from browser storage on mount — cannot read during SSR render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDark(true);
     }
   }, []);
