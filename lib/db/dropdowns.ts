@@ -23,6 +23,14 @@ export async function getDropdowns(type: string, projectId: string | null) {
  * Vendors are listed before ASPD; users are alphabetized within each group.
  * A user with both roles is treated as ASPD (matches the label logic in the UI).
  */
+const ASSIGNEE_ORDER = ["wattana", "wisut", "suraphong", "suapawadee", "peerapat"];
+
+function assigneePriority(name: string) {
+  const lower = name.toLowerCase();
+  const idx = ASSIGNEE_ORDER.findIndex((n) => lower.includes(n));
+  return idx === -1 ? ASSIGNEE_ORDER.length : idx;
+}
+
 export async function getAssigneeUsers() {
   const users = await prisma.user.findMany({
     where: { isActive: true, extraRoles: { hasSome: ["vendor", "aspd"] } },
@@ -30,9 +38,9 @@ export async function getAssigneeUsers() {
     orderBy: { name: "asc" },
   });
   return users.sort((a, b) => {
-    const aIsVendor = !a.extraRoles.includes("aspd");
-    const bIsVendor = !b.extraRoles.includes("aspd");
-    if (aIsVendor !== bIsVendor) return aIsVendor ? -1 : 1;
+    const pa = assigneePriority(a.name);
+    const pb = assigneePriority(b.name);
+    if (pa !== pb) return pa - pb;
     return a.name.localeCompare(b.name);
   });
 }

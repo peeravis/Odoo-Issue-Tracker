@@ -29,6 +29,12 @@ export default async function DashboardPage({
   const sp = await searchParams;
 
   const allProjects = await prisma.project.findMany({
+    where: {
+      status: "active",
+      ...(!perms.canViewAllProjects
+        ? { members: { some: { userId: session.userId } } }
+        : {}),
+    },
     select: { id: true, name: true, code: true },
     orderBy: { name: "asc" },
   });

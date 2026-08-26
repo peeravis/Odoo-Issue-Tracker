@@ -20,6 +20,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { DescriptionWithAttachments } from "@/components/issues/description-with-attachments";
 import { getDropdowns, getAssigneeUsers } from "@/lib/db/dropdowns";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { CommentForm } from "@/components/issues/comment-form";
 
 export default async function IssueDetailPage({
   params,
@@ -394,18 +395,7 @@ export default async function IssueDetailPage({
               })}
             </div>
             <div className="px-6 pb-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <form action={commentAction} className="flex gap-3 items-end">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm">
-                  {session.name?.charAt(0).toUpperCase() ?? "U"}
-                </div>
-                <textarea
-                  name="content"
-                  placeholder="เพิ่ม comment..."
-                  rows={2}
-                  className="input-base flex-1 resize-none"
-                />
-                <button type="submit" className="btn-primary self-end flex-shrink-0">Send</button>
-              </form>
+              <CommentForm issueId={id} avatarLetter={session.name?.charAt(0).toUpperCase() ?? "U"} />
             </div>
           </div>
 

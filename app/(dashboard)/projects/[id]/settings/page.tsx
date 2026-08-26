@@ -152,7 +152,12 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
 
       {/* Members */}
       <Section title="Members">
-        <div className="space-y-2 mb-4">
+        <MemberSearch
+          users={allUsers.filter((u) => !memberIds.has(u.id)).map((u) => ({ id: u.id, name: u.name, email: u.email }))}
+          roles={PROJECT_ROLES}
+          addAction={addMemberAction}
+        />
+        <div className="space-y-2 mt-4">
           {project.members.map((m) => {
             const updateRoleAction = updateProjectMemberRole.bind(null, id, m.userId);
             return (
@@ -184,11 +189,6 @@ export default async function ProjectSettingsPage({ params }: { params: Promise<
             );
           })}
         </div>
-        <MemberSearch
-          users={allUsers.filter((u) => !memberIds.has(u.id)).map((u) => ({ id: u.id, name: u.name, email: u.email }))}
-          roles={PROJECT_ROLES}
-          addAction={addMemberAction}
-        />
       </Section>
 
       {/* Clients */}

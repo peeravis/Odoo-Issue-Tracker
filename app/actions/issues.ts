@@ -662,6 +662,30 @@ export async function uploadAttachment(issueId: string, formData: FormData) {
   revalidatePath(`/issues/${issueId}`);
 }
 
+export async function uploadCommentImage(issueId: string, formData: FormData): Promise<{ url: string }> {
+  const session = await requireSession();
+  const existing = await prisma.issue.findUnique({ where: { id: issueId }, select: { projectId: true } });
+  if (!existing) throw new NotFoundError("Issue");
+  await requireProjectAccess(session, existing.projectId);
+
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) throw new ValidationError("ไม่มีไฟล์");
+  if (file.size > MAX_FILE_SIZE) throw new ValidationError("ไฟล์ใหญ่เกินไป (สูงสุด 5 MB)");
+
+  const allowedImageTypes = new Set(["image/png", "image/jpeg", "image/gif", "image/webp"]);
+  if (!allowedImageTypes.has(file.type)) throw new ValidationError("รองรับเฉพาะรูปภาพ PNG/JPEG/GIF/WebP");
+
+  const extMap: Record<string, string> = { "image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp" };
+  const ext = extMap[file.type] ?? ".png";
+  const fileName = `${Date.now()}-comment${ext}`;
+
+  const bytes = await file.arrayBuffer();
+  await mkdir(UPLOAD_DIR, { recursive: true });
+  await writeFile(path.join(UPLOAD_DIR, fileName), Buffer.from(bytes));
+
+  return { url: `/api/uploads/${fileName}` };
+}
+
 export async function deleteAttachment(issueId: string, attachmentId: string) {
   const session = await requireSession();
   const att = await prisma.attachment.findUnique({ where: { id: attachmentId }, include: { issue: { select: { projectId: true } } } });
