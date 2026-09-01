@@ -11,7 +11,7 @@ import { StatusDropdown } from "@/components/issues/status-dropdown";
 import { formatDate, formatDateTime, generateIssueCode } from "@/lib/utils";
 import { updateIssue, addComment, uploadAttachment, deleteAttachment, deleteComment } from "@/app/actions/issues";
 import { getPermissions } from "@/lib/permissions";
-import { ArrowLeft, MessageSquare, Clock, Edit2, Check, Paperclip } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, MessageSquare, Clock, Edit2, Check, Paperclip } from "lucide-react";
 import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 import { StatusSolutionFields } from "@/components/issues/status-solution-fields";
 import { ToastHandler } from "@/components/ui/toast-handler";
@@ -74,12 +74,22 @@ export default async function IssueDetailPage({
     if (!membership) notFound();
   }
 
-  const [allUsers, allClients, masterIssueTypes, masterModules, masterDepartments] = await Promise.all([
+  const [allUsers, allClients, masterIssueTypes, masterModules, masterDepartments, prevIssue, nextIssue] = await Promise.all([
     getAssigneeUsers(),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     getDropdowns("issueType", issue.projectId),
     getDropdowns("module", issue.projectId),
     getDropdowns("department", issue.projectId),
+    prisma.issue.findFirst({
+      where: { projectId: issue.projectId, issueNumber: { lt: issue.issueNumber } },
+      orderBy: { issueNumber: "desc" },
+      select: { id: true, issueNumber: true },
+    }),
+    prisma.issue.findFirst({
+      where: { projectId: issue.projectId, issueNumber: { gt: issue.issueNumber } },
+      orderBy: { issueNumber: "asc" },
+      select: { id: true, issueNumber: true },
+    }),
   ]);
 
   const isEditing = edit === "1";
@@ -97,11 +107,44 @@ export default async function IssueDetailPage({
     <div className="max-w-5xl space-y-6">
       <ToastHandler toast={toast} />
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="sticky top-14 z-20 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 bg-[#f8fafc]/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-700/60 shadow-sm">
+      <div className="flex items-start justify-between gap-4 max-w-5xl">
         <div className="flex items-start gap-3">
           <Link href={backHref} className="mt-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Link>
+          <div className="flex items-center gap-1 mt-1 flex-shrink-0">
+            {prevIssue ? (
+              <Link
+                href={`/issues/${prevIssue.id}${back ? `?back=${back}` : ""}`}
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 border border-gray-200 dark:border-gray-700 transition-colors"
+                title={`Prev #${prevIssue.issueNumber}`}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Prev</span>
+              </Link>
+            ) : (
+              <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs text-gray-300 dark:text-gray-600 border border-gray-100 dark:border-gray-800 cursor-not-allowed">
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Prev</span>
+              </span>
+            )}
+            {nextIssue ? (
+              <Link
+                href={`/issues/${nextIssue.id}${back ? `?back=${back}` : ""}`}
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 border border-gray-200 dark:border-gray-700 transition-colors"
+                title={`Next #${nextIssue.issueNumber}`}
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            ) : (
+              <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs text-gray-300 dark:text-gray-600 border border-gray-100 dark:border-gray-800 cursor-not-allowed">
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </span>
+            )}
+          </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-mono text-gray-400">{issueCode}</span>
@@ -123,6 +166,7 @@ export default async function IssueDetailPage({
             Edit
           </Link>
         )}
+      </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -105,61 +105,63 @@ export default async function IssuesPage({
 
   return (
     <div className="space-y-4">
-      <FadeUp>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Issues</h1>
-            <p className="text-sm text-gray-400 mt-0.5">{totalCount} issues</p>
+      <div className="sticky top-14 z-20 -mx-4 lg:-mx-6 px-4 lg:px-6 bg-[#f8fafc]/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-700/60 shadow-sm space-y-3 py-3">
+        <FadeUp>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Issues</h1>
+              <p className="text-sm text-gray-400 mt-0.5">{totalCount} issues</p>
+            </div>
+            <div className="flex gap-2">
+              {perms.canExportIssues && (
+                <a
+                  href={`/api/issues/export?${exportParams.toString()}`}
+                  className="btn-secondary inline-flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Export
+                </a>
+              )}
+              {perms.canCreateIssues && (
+                <Link href={`/issues/new${sp.projectId ? `?projectId=${sp.projectId}` : ""}`} className="btn-primary inline-flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  New Issue
+                </Link>
+              )}
+            </div>
           </div>
-          <div className="flex gap-2">
-            {perms.canExportIssues && (
-              <a
-                href={`/api/issues/export?${exportParams.toString()}`}
-                className="btn-secondary inline-flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Export
-              </a>
-            )}
-            {perms.canCreateIssues && (
-              <Link href={`/issues/new${sp.projectId ? `?projectId=${sp.projectId}` : ""}`} className="btn-primary inline-flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                New Issue
-              </Link>
-            )}
-          </div>
-        </div>
-      </FadeUp>
+        </FadeUp>
 
-      {/* Filters */}
-      <FadeUp delay={0.05}>
-        <IssueFilters
-          projects={userProjects}
-          users={allUsers}
-          createdByUsers={allCreatedByUsers}
-          clients={allClients}
-          modules={distinctModules.map((r) => r.module!)}
-          issueTypes={distinctIssueTypes.map((r) => r.issueType!)}
-          departments={distinctDepartments.map((r) => r.department!)}
-          sessionUserId={session.userId}
-          defaults={{
-            search: sp.search,
-            projectId: sp.projectId,
-            clientId: sp.clientId,
-            priority: sp.priority,
-            status: sp.status,
-            assigneeId: sp.assigneeId,
-            createdById: sp.createdById,
-            module: sp.module,
-            issueType: sp.issueType,
-            department: sp.department,
-            from: sp.from,
-            to: sp.to,
-            groupBy: sp.groupBy,
-            duePreset: sp.duePreset,
-          }}
-        />
-      </FadeUp>
+        {/* Filters */}
+        <FadeUp delay={0.05}>
+          <IssueFilters
+            projects={userProjects}
+            users={allUsers}
+            createdByUsers={allCreatedByUsers}
+            clients={allClients}
+            modules={distinctModules.map((r) => r.module!)}
+            issueTypes={distinctIssueTypes.map((r) => r.issueType!)}
+            departments={distinctDepartments.map((r) => r.department!)}
+            sessionUserId={session.userId}
+            defaults={{
+              search: sp.search,
+              projectId: sp.projectId,
+              clientId: sp.clientId,
+              priority: sp.priority,
+              status: sp.status,
+              assigneeId: sp.assigneeId,
+              createdById: sp.createdById,
+              module: sp.module,
+              issueType: sp.issueType,
+              department: sp.department,
+              from: sp.from,
+              to: sp.to,
+              groupBy: sp.groupBy,
+              duePreset: sp.duePreset,
+            }}
+          />
+        </FadeUp>
+      </div>
 
       <FadeUp delay={0.1}>
         <IssueTable issues={issues} groupBy={groupBy} users={allUsers} backQuery={backQuery} />

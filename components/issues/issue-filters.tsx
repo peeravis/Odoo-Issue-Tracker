@@ -86,7 +86,7 @@ export function IssueFilters({ projects, users, createdByUsers, clients, modules
 
   return (
     <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 p-4 shadow-sm space-y-3">
-      {/* Quick filters row */}
+      {/* Quick filters + Group By + Clear All */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-gray-400 font-medium">Quick:</span>
         <button
@@ -115,10 +115,33 @@ export function IssueFilters({ projects, users, createdByUsers, clients, modules
             </button>
           );
         })}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs text-gray-400 font-medium flex items-center gap-1"><Filter className="h-3 w-3" /> Group By:</span>
+          <div className="w-36">
+            <SearchableSelect
+              options={[
+                { value: "status", label: "Status" },
+                { value: "priority", label: "Priority" },
+                { value: "module", label: "Module" },
+                { value: "issueType", label: "Issue Type" },
+                { value: "department", label: "Department" },
+                { value: "assignee.name", label: "Assignee" },
+                { value: "client.name", label: "Client" },
+                { value: "project.name", label: "Project" },
+              ]}
+              placeholder="No Group"
+              defaultValue={defaults.groupBy ?? ""}
+              onChange={(v) => handleSelect("groupBy", v)}
+            />
+          </div>
+          <Link href="/issues" className="btn-secondary text-xs px-3 py-1.5 whitespace-nowrap">Clear All</Link>
+        </div>
       </div>
 
+      {/* Filter rows */}
       <div className="border-t border-gray-100 dark:border-gray-700/60 pt-3">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {/* Row 1 */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">Search</label>
             <input
@@ -190,6 +213,7 @@ export function IssueFilters({ projects, users, createdByUsers, clients, modules
             />
           </div>
 
+          {/* Row 2 */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">Created By</label>
             <SearchableSelect
@@ -258,31 +282,6 @@ export function IssueFilters({ projects, users, createdByUsers, clients, modules
               onChange={(e) => handleSelect("to", e.target.value)}
               className="input-base w-full"
             />
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-500 mb-1 flex items-center gap-1">
-              <Filter className="h-3 w-3" /> Group By
-            </label>
-            <SearchableSelect
-              options={[
-                { value: "status", label: "Status" },
-                { value: "priority", label: "Priority" },
-                { value: "module", label: "Module" },
-                { value: "issueType", label: "Issue Type" },
-                { value: "department", label: "Department" },
-                { value: "assignee.name", label: "Assignee" },
-                { value: "client.name", label: "Client" },
-                { value: "project.name", label: "Project" },
-              ]}
-              placeholder="No Group"
-              defaultValue={defaults.groupBy ?? ""}
-              onChange={(v) => handleSelect("groupBy", v)}
-            />
-          </div>
-
-          <div className="flex items-end gap-2 col-span-2">
-            <Link href="/issues" className="btn-secondary flex-1 text-center py-2">Clear All</Link>
           </div>
         </div>
       </div>
