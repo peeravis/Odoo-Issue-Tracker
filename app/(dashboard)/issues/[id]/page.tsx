@@ -21,6 +21,7 @@ import { DescriptionWithAttachments } from "@/components/issues/description-with
 import { getDropdowns, getAssigneeUsers } from "@/lib/db/dropdowns";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { CommentForm } from "@/components/issues/comment-form";
+import { buildIssueWhere } from "@/lib/db/issue-filters";
 
 export default async function IssueDetailPage({
   params,
@@ -74,20 +75,33 @@ export default async function IssueDetailPage({
     if (!membership) notFound();
   }
 
+  // Resolve accessible project IDs for filter-aware prev/next
+  const accessibleProjectIds = issuePerms.canViewAllProjects
+    ? await prisma.project.findMany({ where: { status: "active" }, select: { id: true } }).then((r) => r.map((p) => p.id))
+    : await prisma.projectMember.findMany({ where: { userId: session.userId }, select: { projectId: true } }).then((r) => r.map((m) => m.projectId));
+
+  // Parse back params to build the same filter where clause used in the issues list
+  const backParams = back ? Object.fromEntries(new URLSearchParams(decodeURIComponent(back)).entries()) : null;
+  const filterWhere = backParams
+    ? buildIssueWhere(backParams, accessibleProjectIds)
+    : { projectId: issue.projectId };
+
   const [allUsers, allClients, masterIssueTypes, masterModules, masterDepartments, prevIssue, nextIssue] = await Promise.all([
     getAssigneeUsers(),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     getDropdowns("issueType", issue.projectId),
     getDropdowns("module", issue.projectId),
     getDropdowns("department", issue.projectId),
+    // List orders by createdAt DESC — "prev" in list = newer createdAt
     prisma.issue.findFirst({
-      where: { projectId: issue.projectId, issueNumber: { lt: issue.issueNumber } },
-      orderBy: { issueNumber: "desc" },
+      where: { ...filterWhere, createdAt: { gt: issue.createdAt }, id: { not: id } },
+      orderBy: { createdAt: "asc" },
       select: { id: true, issueNumber: true },
     }),
+    // "next" in list = older createdAt
     prisma.issue.findFirst({
-      where: { projectId: issue.projectId, issueNumber: { gt: issue.issueNumber } },
-      orderBy: { issueNumber: "asc" },
+      where: { ...filterWhere, createdAt: { lt: issue.createdAt }, id: { not: id } },
+      orderBy: { createdAt: "desc" },
       select: { id: true, issueNumber: true },
     }),
   ]);
