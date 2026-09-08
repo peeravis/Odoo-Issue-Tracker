@@ -135,6 +135,7 @@ export default async function IssuesPage({
         {/* Filters */}
         <FadeUp delay={0.05}>
           <IssueFilters
+            key={backQuery}
             projects={userProjects}
             users={allUsers}
             createdByUsers={allCreatedByUsers}

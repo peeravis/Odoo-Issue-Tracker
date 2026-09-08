@@ -130,7 +130,7 @@ export default async function IssueDetailPage({
           <div className="flex items-center gap-1 mt-1 flex-shrink-0">
             {prevIssue ? (
               <Link
-                href={`/issues/${prevIssue.id}${back ? `?back=${back}` : ""}`}
+                href={`/issues/${prevIssue.id}${back ? `?back=${encodeURIComponent(back)}` : ""}`}
                 className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 border border-gray-200 dark:border-gray-700 transition-colors"
                 title={`Prev #${prevIssue.issueNumber}`}
               >
@@ -145,7 +145,7 @@ export default async function IssueDetailPage({
             )}
             {nextIssue ? (
               <Link
-                href={`/issues/${nextIssue.id}${back ? `?back=${back}` : ""}`}
+                href={`/issues/${nextIssue.id}${back ? `?back=${encodeURIComponent(back)}` : ""}`}
                 className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 border border-gray-200 dark:border-gray-700 transition-colors"
                 title={`Next #${nextIssue.issueNumber}`}
               >
