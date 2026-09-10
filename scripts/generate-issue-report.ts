@@ -165,7 +165,7 @@ async function main() {
 </body>
 </html>`;
 
-  const outPath = path.join(process.cwd(), "issue-report.html");
+  const outPath = path.join(process.env.HOME ?? process.cwd(), "Downloads", "issue-report.html");
   writeFileSync(outPath, html, "utf-8");
   console.log(`✓ Generated: ${outPath} (${issues.length} issues, ${byProject.size} projects)`);
   await prisma.$disconnect();
