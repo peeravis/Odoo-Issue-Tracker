@@ -274,7 +274,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
     }
   }
 
-  // Send status-change email to creator when status changes to wait_for_user_check or resolved
+  // Send status-change email to creator when status changes to wait_for_user_check, wait_for_programmer_check or resolved
   if (existing.status !== status && issueWithProject?.createdBy.email) {
     const emailBase = {
       to: issueWithProject.createdBy.email,
@@ -293,7 +293,7 @@ export async function updateIssue(issueId: string, formData: FormData) {
       dueDate: dueDate ? new Date(dueDate) : null,
       solution,
     };
-    if (status === "wait_for_user_check") {
+    if (status === "wait_for_user_check" || status === "wait_for_programmer_check") {
       sendWaitForCheckEmail(emailBase).catch((err: unknown) => logger.error("[mailer] updateIssue waitForCheck failed", { error: String(err) }));
     } else if (status === "resolved") {
       sendResolvedEmail(emailBase).catch((err: unknown) => logger.error("[mailer] updateIssue resolved failed", { error: String(err) }));
@@ -422,7 +422,7 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus) {
       dueDate: existing.dueDate,
       solution: existing.solution,
     };
-    if (status === "wait_for_user_check") {
+    if (status === "wait_for_user_check" || status === "wait_for_programmer_check") {
       sendWaitForCheckEmail(emailBase).catch((err: unknown) => logger.error("[mailer] updateIssueStatus waitForCheck failed", { error: String(err) }));
     } else if (status === "resolved") {
       sendResolvedEmail(emailBase).catch((err: unknown) => logger.error("[mailer] updateIssueStatus resolved failed", { error: String(err) }));

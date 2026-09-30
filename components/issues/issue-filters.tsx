@@ -194,7 +194,7 @@ export function IssueFilters({ projects, users, createdByUsers, clients, modules
               className="input-base w-full"
             >
               <option value="">All</option>
-              {(["open", "in_progress", "wait_for_user_check", "resolved", "closed", "reopened"] as const).map((s) => (
+              {(["open", "in_progress", "wait_for_user_check", "wait_for_programmer_check", "resolved", "closed", "reopened"] as const).map((s) => (
                 <option key={s} value={s}>{STATUS_LABELS[s]}</option>
               ))}
             </select>

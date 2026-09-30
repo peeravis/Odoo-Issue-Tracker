@@ -55,6 +55,7 @@ export const STATUS_COLORS = {
   closed: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
   reopened: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
   wait_for_user_check: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+  wait_for_programmer_check: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300",
 } as const;
 
 export const PRIORITY_LABELS = {
@@ -70,4 +71,5 @@ export const STATUS_LABELS = {
   closed: "Cancelled",
   reopened: "Reopened",
   wait_for_user_check: "Wait For User Check",
+  wait_for_programmer_check: "Wait For Programmer Check",
 } as const;

@@ -9,7 +9,7 @@ import { STATUS_LABELS } from "@/lib/utils";
 import type { IssueStatus } from "@/lib/types";
 import { AlertTriangle } from "lucide-react";
 
-const STATUSES: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "resolved", "closed", "reopened"];
+const STATUSES: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "wait_for_programmer_check", "resolved", "closed", "reopened"];
 
 type Pending = { from: IssueStatus; to: IssueStatus };
 

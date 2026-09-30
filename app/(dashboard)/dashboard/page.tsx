@@ -72,7 +72,7 @@ export default async function DashboardPage({
   const reportStart = fromDate ?? todayStart;
   const reportEnd = toDate ?? new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
 
-  const pendingStatuses: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "reopened"];
+  const pendingStatuses: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "wait_for_programmer_check", "reopened"];
 
   const [statusCounts, recentIssues, priorityStats, monthlyStats, overdueIssues, projectStats, assigneeStats,
     periodNewCount, periodByStatus, pendingTotal, pendingByStatus, periodResolvedCount, totalAllCount] =
@@ -151,6 +151,7 @@ export default async function DashboardPage({
   const openCount = getStatusCount("open");
   const inProgressCount = getStatusCount("in_progress");
   const waitForCheckCount = getStatusCount("wait_for_user_check");
+  const waitForProgrammerCheckCount = getStatusCount("wait_for_programmer_check");
   const resolvedCount = getStatusCount("resolved");
   const closedCount = getStatusCount("closed");
   const reopenedCount = getStatusCount("reopened");
@@ -265,10 +266,11 @@ export default async function DashboardPage({
       </FadeUp>
 
       {/* Status Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         <StatsCard label="Open" value={openCount} icon={<AlertCircle className="h-5 w-5 text-white" />} color="bg-blue-500" delay={0.05} />
         <StatsCard label="In Progress" value={inProgressCount} icon={<Clock className="h-5 w-5 text-white" />} color="bg-purple-500" delay={0.1} />
-        <StatsCard label="Wait Check" value={waitForCheckCount} icon={<AlertTriangle className="h-5 w-5 text-white" />} color="bg-orange-500" delay={0.12} />
+        <StatsCard label="Wait User" value={waitForCheckCount} icon={<AlertTriangle className="h-5 w-5 text-white" />} color="bg-orange-500" delay={0.12} />
+        <StatsCard label="Wait Dev" value={waitForProgrammerCheckCount} icon={<AlertTriangle className="h-5 w-5 text-white" />} color="bg-cyan-500" delay={0.13} />
         <StatsCard label="Resolved" value={resolvedCount} icon={<CheckCircle className="h-5 w-5 text-white" />} color="bg-emerald-500" delay={0.15} />
         <StatsCard label="Cancelled" value={closedCount} icon={<XCircle className="h-5 w-5 text-white" />} color="bg-slate-500" delay={0.2} />
         <StatsCard label="Reopened" value={reopenedCount} icon={<Bug className="h-5 w-5 text-white" />} color="bg-rose-500" delay={0.25} />
@@ -290,6 +292,7 @@ export default async function DashboardPage({
                   { label: "Open", count: openCount, color: "#3B82F6" },
                   { label: "In Progress", count: inProgressCount, color: "#A855F7" },
                   { label: "Wait for Check", count: waitForCheckCount, color: "#F97316" },
+                  { label: "Wait for Dev", count: waitForProgrammerCheckCount, color: "#06B6D4" },
                   { label: "Resolved", count: resolvedCount, color: "#10B981" },
                   { label: "Cancelled", count: closedCount, color: "#94A3B8" },
                   { label: "Reopened", count: reopenedCount, color: "#F43F5E" },

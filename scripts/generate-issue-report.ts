@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<string, string> = {
   open: "Open",
   in_progress: "In Progress",
   wait_for_user_check: "Wait For User Check",
+  wait_for_programmer_check: "Wait For Programmer Check",
   reopened: "Reopened",
   resolved: "Resolved",
   closed: "Closed",
@@ -24,6 +25,7 @@ const STATUS_COLOR: Record<string, string> = {
   open: "#3b82f6",
   in_progress: "#f59e0b",
   wait_for_user_check: "#8b5cf6",
+  wait_for_programmer_check: "#06b6d4",
   reopened: "#ef4444",
   resolved: "#10b981",
   closed: "#6b7280",
@@ -51,7 +53,7 @@ function badge(label: string, color: string) {
 }
 
 async function main() {
-  const openStatuses = ["open", "in_progress", "wait_for_user_check", "reopened"] as const;
+  const openStatuses = ["open", "in_progress", "wait_for_user_check", "wait_for_programmer_check", "reopened"] as const;
 
   const issues = await prisma.issue.findMany({
     where: {

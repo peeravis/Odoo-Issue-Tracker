@@ -222,6 +222,7 @@ enum IssueStatus {
   closed
   reopened
   wait_for_user_check
+  wait_for_programmer_check
 }
 
 enum FieldType {

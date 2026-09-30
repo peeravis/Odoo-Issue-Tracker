@@ -34,6 +34,7 @@ const ALL_STATUSES = [
   "closed",
   "reopened",
   "wait_for_user_check",
+  "wait_for_programmer_check",
 ] as const;
 
 const PROJECT_ROLES = [

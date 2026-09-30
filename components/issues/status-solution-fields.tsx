@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { STATUS_LABELS } from "@/lib/utils";
 
-const STATUS_OPTIONS = ["open", "in_progress", "wait_for_user_check", "resolved", "closed", "reopened"];
+const STATUS_OPTIONS = ["open", "in_progress", "wait_for_user_check", "wait_for_programmer_check", "resolved", "closed", "reopened"];
 
 interface StatusSolutionFieldsProps {
   defaultStatus?: string;

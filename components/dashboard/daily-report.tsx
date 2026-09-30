@@ -6,12 +6,13 @@ import { STATUS_LABELS } from "@/lib/utils";
 import type { IssueStatus } from "@/lib/types";
 
 const STATUS_COLOR: Record<IssueStatus, string> = {
-  open:                "bg-blue-500",
-  in_progress:         "bg-purple-500",
-  wait_for_user_check: "bg-orange-400",
-  resolved:            "bg-emerald-500",
-  closed:              "bg-slate-400",
-  reopened:            "bg-rose-500",
+  open:                      "bg-blue-500",
+  in_progress:               "bg-purple-500",
+  wait_for_user_check:       "bg-orange-400",
+  wait_for_programmer_check: "bg-cyan-500",
+  resolved:                  "bg-emerald-500",
+  closed:                    "bg-slate-400",
+  reopened:                  "bg-rose-500",
 };
 
 interface StatusCount { status: string; _count: number }

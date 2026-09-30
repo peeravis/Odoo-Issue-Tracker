@@ -7,7 +7,7 @@ import { generateIssueCode, STATUS_LABELS, PRIORITY_LABELS, canViewAllProjects }
 import { format } from "date-fns";
 import type { IssueStatus } from "@/lib/types";
 
-const STATUS_ORDER: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "resolved", "closed", "reopened"];
+const STATUS_ORDER: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "wait_for_programmer_check", "resolved", "closed", "reopened"];
 const PRIORITY_ORDER = ["critical", "high", "medium", "low"];
 
 const C = {
@@ -30,7 +30,8 @@ const C = {
 const STATUS_PALETTE: Record<IssueStatus, { dark: string; light: string }> = {
   open:                { dark: "FF2563EB", light: "FFDBEAFE" },
   in_progress:         { dark: "FF9333EA", light: "FFF3E8FF" },
-  wait_for_user_check: { dark: "FFEA580C", light: "FFFFEDD5" },
+  wait_for_user_check:       { dark: "FFEA580C", light: "FFFFEDD5" },
+  wait_for_programmer_check: { dark: "FF0891B2", light: "FFCFFAFE" },
   resolved:            { dark: "FF059669", light: "FFD1FAE5" },
   closed:              { dark: "FF64748B", light: "FFF1F5F9" },
   reopened:            { dark: "FFE11D48", light: "FFFFE4E6" },
@@ -123,7 +124,7 @@ export async function GET(request: NextRequest) {
     };
   }
 
-  const pendingStatuses: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "reopened"];
+  const pendingStatuses: IssueStatus[] = ["open", "in_progress", "wait_for_user_check", "wait_for_programmer_check", "reopened"];
 
   const [issues, statusCounts, totalAllCount, pendingByStatus] = await Promise.all([
     prisma.issue.findMany({
