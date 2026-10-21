@@ -4,11 +4,12 @@ import { redirect } from "next/navigation";
 import { getPermissions } from "@/lib/permissions";
 import { Plus, Download } from "lucide-react";
 import { FadeUp } from "@/components/ui/motion";
-import { addDropdownMaster, deleteDropdownMaster } from "@/app/actions/master";
+import { addDropdownMaster, deleteDropdownMaster, addProjectDropdownFromMaster, deleteProjectDropdownFromMaster } from "@/app/actions/master";
 import { upsertClient, deleteClient } from "@/app/actions/clients";
 import { addProjectGroup, deleteProjectGroup } from "@/app/actions/projects";
 import { DeleteConfirmButton } from "@/components/ui/delete-confirm-button";
 import { ImportClientsButton } from "@/components/clients/import-clients-button";
+import { ProjectSelector } from "@/components/master-data/project-selector";
 
 const TYPES = [
   { key: "issueType", label: "Issue Type" },
@@ -16,17 +17,33 @@ const TYPES = [
   { key: "department", label: "Department" },
 ];
 
-export default async function MasterDataPage() {
+export default async function MasterDataPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ projectId?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   const perms = await getPermissions(session.role);
   if (!perms.canManageMasterData) redirect("/projects");
 
-  const [items, clients, projectGroups] = await Promise.all([
+  const { projectId: selectedProjectId } = await searchParams;
+
+  const [items, clients, projectGroups, projects] = await Promise.all([
     prisma.dropdownMaster.findMany({ where: { projectId: null }, orderBy: [{ type: "asc" }, { sortOrder: "asc" }] }),
     prisma.client.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { issues: true } } } }),
     prisma.projectGroup.findMany({ orderBy: { sortOrder: "asc" }, include: { _count: { select: { projects: true } } } }),
+    prisma.project.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, code: true } }),
   ]);
+
+  const projectDropdowns = selectedProjectId
+    ? await prisma.dropdownMaster.findMany({
+        where: { projectId: selectedProjectId },
+        orderBy: [{ type: "asc" }, { sortOrder: "asc" }],
+      })
+    : [];
+
+  const selectedProject = selectedProjectId ? projects.find((p) => p.id === selectedProjectId) : null;
 
   const byType = (type: string) => items.filter((i) => i.type === type);
 
@@ -79,6 +96,62 @@ export default async function MasterDataPage() {
               );
             })}
           </div>
+        </div>
+      </FadeUp>
+
+      {/* Per-Project Dropdown Options */}
+      <FadeUp delay={0.07}>
+        <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/50 p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
+            <div>
+              <h2 className="font-semibold text-gray-900 dark:text-white mb-1">Per-Project Dropdown Options</h2>
+              <p className="text-xs text-gray-400">Override global options สำหรับแต่ละ Project — ถ้า Project มี options เองจะไม่ใช้ global fallback</p>
+            </div>
+            <ProjectSelector projects={projects} selectedId={selectedProjectId} />
+          </div>
+
+          {!selectedProjectId && (
+            <p className="text-sm text-gray-400 italic text-center py-6">เลือก Project เพื่อจัดการ Dropdown</p>
+          )}
+
+          {selectedProject && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {TYPES.map(({ key, label }) => {
+                const typeItems = projectDropdowns.filter((i) => i.type === key);
+                const addAction = addProjectDropdownFromMaster.bind(null, selectedProject.id, key);
+                return (
+                  <div key={key} className="bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600/50 p-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">{label}</h3>
+
+                    <div className="space-y-1 mb-4 min-h-[40px]">
+                      {typeItems.length === 0 && (
+                        <p className="text-xs text-gray-400 italic">ยังไม่มี — ใช้ global fallback</p>
+                      )}
+                      {typeItems.map((item) => {
+                        const deleteAction = deleteProjectDropdownFromMaster.bind(null, item.id, selectedProject.id);
+                        return (
+                          <div key={item.id} className="flex items-center justify-between group py-1 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/40">
+                            <span className="text-sm text-gray-800 dark:text-gray-200">{item.label}</span>
+                            <DeleteConfirmButton action={deleteAction} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 p-0.5 transition-opacity" iconClassName="h-3.5 w-3.5" />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <form action={async (fd: FormData) => {
+                      "use server";
+                      await addAction(fd.get("label") as string);
+                    }} className="flex gap-2">
+                      <input name="label" placeholder={`Add ${label}...`} required className="input-base flex-1 text-sm" />
+                      <button type="submit" className="btn-primary !px-2.5 !py-1.5">
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </form>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </FadeUp>
 

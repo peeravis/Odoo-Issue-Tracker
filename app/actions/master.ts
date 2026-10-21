@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getPermissions } from "@/lib/permissions";
@@ -32,4 +33,29 @@ export async function deleteDropdownMaster(id: string) {
   revalidatePath("/master-data");
   revalidatePath("/issues/new");
   revalidatePath("/issues", "layout");
+}
+
+export async function addProjectDropdownFromMaster(projectId: string, type: string, label: string) {
+  await requireAdmin();
+  const trimmed = label.trim();
+  if (!trimmed) return;
+  const count = await prisma.dropdownMaster.count({ where: { type, projectId } });
+  await prisma.dropdownMaster.upsert({
+    where: { type_label_projectId: { type, label: trimmed, projectId } },
+    create: { type, label: trimmed, projectId, sortOrder: count },
+    update: {},
+  });
+  revalidatePath("/master-data");
+  revalidatePath("/issues/new");
+  revalidatePath("/issues", "layout");
+  redirect(`/master-data?projectId=${projectId}`);
+}
+
+export async function deleteProjectDropdownFromMaster(id: string, projectId: string) {
+  await requireAdmin();
+  await prisma.dropdownMaster.delete({ where: { id } });
+  revalidatePath("/master-data");
+  revalidatePath("/issues/new");
+  revalidatePath("/issues", "layout");
+  redirect(`/master-data?projectId=${projectId}`);
 }
